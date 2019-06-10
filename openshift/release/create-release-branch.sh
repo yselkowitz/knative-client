@@ -12,7 +12,7 @@ git checkout -b "$target" "$release"
 # Update openshift's master and take all needed files from there.
 git fetch openshift master
 git checkout openshift/master -- openshift OWNERS_ALIASES OWNERS Makefile
-make RELEASE=$release generate-release
-make RELEASE=ci generate-release
+#make RELEASE=$release generate-release
+#make RELEASE=ci generate-release
 git add openshift OWNERS_ALIASES OWNERS Makefile
 git commit -m "Add openshift specific files."
