@@ -32,5 +32,4 @@ resources:
     requests:
       cpu: 100m
       memory: 200Mi
-images:
 EOF
