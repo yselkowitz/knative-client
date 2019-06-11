@@ -1,5 +1,5 @@
 aliases:
-  client-approvers:
+  knative-client-approvers:
   - alanfx
   - bbrowning
   - markusthoemmes
@@ -7,7 +7,7 @@ aliases:
   - matzew
   - rhuss
   - navidshaikh
-  client-reviewers:
+  knative-client-reviewers:
   - alanfx
   - bbrowning
   - markusthoemmes
