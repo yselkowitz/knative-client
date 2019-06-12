@@ -4,7 +4,7 @@ branch=${1-'master'}
 
 cat <<EOF
 tag_specification:
-  name: '4.0'
+  name: '4.1'
   namespace: ocp
 promotion:
   cluster: https://api.ci.openshift.org
