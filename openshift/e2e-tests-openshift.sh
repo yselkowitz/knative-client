@@ -165,15 +165,15 @@ function run_e2e_tests(){
   # TODO: Link the integration tests written in go here once the PR is merged upstream
 
   ./kn service create hello --image $KN_DEFAULT_TEST_IMAGE -e TARGET=Knative || failed=1
-  sleep 5
+  sleep 20
   ./kn service get || failed=1
   ./kn service update hello --env TARGET=kn || failed=1
-  sleep 3
+  sleep 20
   ./kn revision get || failed=1
   ./kn service get || failed=1
   ./kn service create hello --force --image $KN_DEFAULT_TEST_IMAGE -e TARGET=Awesome || failed=1
   ./kn service create foo --force --image $KN_DEFAULT_TEST_IMAGE -e TARGET=foo || failed=1
-  sleep 5
+  sleep 20
   ./kn revision get || failed=1
   ./kn service get || failed=1
   ./kn service describe hello || failed=1
