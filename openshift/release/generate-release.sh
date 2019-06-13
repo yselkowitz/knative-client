@@ -12,5 +12,3 @@ else
     output_binary="kn"
     tag=$release
 fi
-
-resolve_resources config/ $output_file $image_prefix $tag

@@ -1,21 +1,12 @@
 #!/usr/bin/env bash
 
-source $(dirname $0)/../test/e2e-common.sh
-source $(dirname $0)/release/resolve.sh
-
 set -x
 
-readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
-readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
-readonly INTERNAL_REGISTRY="${INTERNAL_REGISTRY:-"image-registry.openshift-image-registry.svc:5000"}"
-readonly USER=$KUBE_SSH_USER #satisfy e2e_flags.go#initializeFlags()
-readonly OPENSHIFT_REGISTRY="${OPENSHIFT_REGISTRY:-"registry.svc.ci.openshift.org"}"
-readonly INSECURE="${INSECURE:-"false"}"
 readonly TEST_NAMESPACE=client-tests
 readonly TEST_NAMESPACE_ALT=client-tests-alt
-readonly CLIENT_NAMESPACE=knative-client
 readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
 readonly SERVING_RELEASE_BRANCH="release-v0.6.0"
+readonly SERVING_RELEASE_TAG="v0.6.0"
 readonly KN_DEFAULT_TEST_IMAGE="gcr.io/knative-samples/helloworld-go"
 
 env
@@ -70,12 +61,13 @@ function timeout() {
 function install_knative(){
   header "Installing Knative"
 
-  echo ">> Patching Knative Serving CatalogSource to reference CI produced images"
-  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-serving/$SERVING_RELEASE_BRANCH/openshift/release/knative-serving-ci.yaml"
-  sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-serving.catalogsource.yaml > knative-serving.catalogsource-ci.yaml
+  #echo ">> Patching Knative Serving CatalogSource to reference CI produced images"
+  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-serving/${SERVING_RELEASE_BRANCH}/openshift/release/knative-serving-${SERVING_RELEASE_TAG}.yaml"
+  #sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-serving.catalogsource.yaml > knative-serving.catalogsource-ci.yaml
 
   # Install CatalogSources in OLM namespace
-  oc apply -n $OLM_NAMESPACE -f knative-serving.catalogsource-ci.yaml
+  #oc apply -n $OLM_NAMESPACE -f knative-serving.catalogsource-ci.yaml
+  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-serving.catalogsource.yaml
   timeout 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
@@ -187,6 +179,37 @@ function run_e2e_tests(){
   ./kn service delete foo || failed=1
 
   return $failed
+}
+
+# Waits until all pods are running in the given namespace.
+# Parameters: $1 - namespace.
+function wait_until_pods_running() {
+  echo -n "Waiting until all pods in namespace $1 are up"
+  for i in {1..150}; do  # timeout after 5 minutes
+    local pods="$(kubectl get pods --no-headers -n $1 2>/dev/null)"
+    # All pods must be running
+    local not_running=$(echo "${pods}" | grep -v Running | grep -v Completed | wc -l)
+    if [[ -n "${pods}" && ${not_running} -eq 0 ]]; then
+      local all_ready=1
+      while read pod ; do
+        local status=(`echo -n ${pod} | cut -f2 -d' ' | tr '/' ' '`)
+        # All containers must be ready
+        [[ -z ${status[0]} ]] && all_ready=0 && break
+        [[ -z ${status[1]} ]] && all_ready=0 && break
+        [[ ${status[0]} -lt 1 ]] && all_ready=0 && break
+        [[ ${status[1]} -lt 1 ]] && all_ready=0 && break
+        [[ ${status[0]} -ne ${status[1]} ]] && all_ready=0 && break
+      done <<< "$(echo "${pods}" | grep -v Completed)"
+      if (( all_ready )); then
+        echo -e "\nAll pods are up:\n${pods}"
+        return 0
+      fi
+    fi
+    echo -n "."
+    sleep 2
+  done
+  echo -e "\n\nERROR: timeout waiting for pods to come up\n${pods}"
+  return 1
 }
 
 function delete_knative_openshift() {
