@@ -59,15 +59,14 @@ function timeout() {
 }
 
 function install_knative(){
-  header "Installing Knative"
+  header "Installing Knative serving"
 
-  #echo ">> Patching Knative Serving CatalogSource to reference CI produced images"
+  echo ">> Patching Knative Serving CatalogSource to reference serving release ${SERVING_RELEASE_BRANCH}"
   RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-serving/${SERVING_RELEASE_BRANCH}/openshift/release/knative-serving-${SERVING_RELEASE_TAG}.yaml"
-  #sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-serving.catalogsource.yaml > knative-serving.catalogsource-ci.yaml
+  sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-serving.catalogsource.yaml > knative-serving.catalogsource-ci.yaml
 
   # Install CatalogSources in OLM namespace
-  #oc apply -n $OLM_NAMESPACE -f knative-serving.catalogsource-ci.yaml
-  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-serving.catalogsource.yaml
+  oc apply -n $OLM_NAMESPACE -f knative-serving.catalogsource-ci.yaml
   timeout 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
@@ -77,8 +76,6 @@ function install_knative(){
   # Wait for 6 pods to appear first
   timeout 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
   wait_until_pods_running knative-serving || return 1
-
-  #enable_knative_interaction_with_registry
 
   # Wait for 2 pods to appear first
   timeout 900 '[[ $(oc get pods -n istio-system --no-headers | wc -l) -lt 2 ]]' || return 1
