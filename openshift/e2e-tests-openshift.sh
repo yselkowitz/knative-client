@@ -71,7 +71,7 @@ function install_knative(){
   wait_until_pods_running $OLM_NAMESPACE
 
   # Deploy Knative Operators Serving
-  deploy_knative_operator serving
+  deploy_knative_operator serving KnativeServing
 
   # Wait for 6 pods to appear first
   timeout 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
@@ -83,11 +83,12 @@ function install_knative(){
 
   wait_until_hostname_resolves $(kubectl get svc -n istio-system istio-ingressgateway -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
 
-  header "Knative Installed successfully"
+  header "Knative serving Installed successfully"
 }
 
 function deploy_knative_operator(){
   local COMPONENT="knative-$1"
+  local KIND=$2
 
   cat <<-EOF | oc apply -f -
 	apiVersion: v1
@@ -119,7 +120,7 @@ function deploy_knative_operator(){
 	EOF
   cat <<-EOF | oc apply -f -
   apiVersion: serving.knative.dev/v1alpha1
-  kind: Install
+  kind: $KIND
   metadata:
     name: ${COMPONENT}
     namespace: ${COMPONENT}
