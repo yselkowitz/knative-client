@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/library.sh
+source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/e2e-tests.sh
+
 set -x
 
 readonly TEST_NAMESPACE=client-tests
@@ -8,6 +11,7 @@ readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
 readonly SERVING_RELEASE_BRANCH="release-v0.6.0"
 readonly SERVING_RELEASE_TAG="v0.6.0"
 readonly KN_DEFAULT_TEST_IMAGE="gcr.io/knative-samples/helloworld-go"
+readonly SERVING_NAMESPACE=knative-serving
 
 env
 
@@ -211,14 +215,10 @@ function wait_until_pods_running() {
 }
 
 function delete_knative_openshift() {
-  echo ">> Bringing down Knative Serving, Build and Pipeline"
+  echo ">> Bringing down Knative Serving"
   oc delete --ignore-not-found=true -n $OLM_NAMESPACE -f knative-serving.catalogsource-ci.yaml
-  oc delete --ignore-not-found=true -f third_party/config/build/release.yaml
-  oc delete --ignore-not-found=true -f third_party/config/pipeline/release.yaml
 
   oc delete project $SERVING_NAMESPACE
-  oc delete project knative-build
-  oc delete project knative-build-pipeline
 }
 
 function delete_test_namespace(){
