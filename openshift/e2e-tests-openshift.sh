@@ -178,21 +178,23 @@ function run_e2e_tests(){
   # adding the basic workflow tests for now
   # TODO: Link the integration tests written in go here once the PR is merged upstream
 
-  ./kn service create hello --image $KN_DEFAULT_TEST_IMAGE -e TARGET=Knative || failed=1
-  sleep 20
-  ./kn service get || failed=1
-  ./kn service update hello --env TARGET=kn || failed=1
-  sleep 20
-  ./kn revision get || failed=1
-  ./kn service get || failed=1
-  ./kn service create hello --force --image $KN_DEFAULT_TEST_IMAGE -e TARGET=Awesome || failed=1
-  ./kn service create foo --force --image $KN_DEFAULT_TEST_IMAGE -e TARGET=foo || failed=1
-  sleep 20
-  ./kn revision get || failed=1
-  ./kn service get || failed=1
-  ./kn service describe hello || failed=1
-  ./kn service delete hello || failed=1
-  ./kn service delete foo || failed=1
+  ./kn service create svc1 --async --image $KN_DEFAULT_TEST_IMAGE -e TARGET=Knative || fail_test
+  ./kn service create hello --wait-timeout 120 --image $KN_DEFAULT_TEST_IMAGE -e TARGET=Knative || fail_test
+  ./kn service list hello || fail_test
+  ./kn service update hello --env TARGET=kn || fail_test
+  ./kn revision list hello || fail_test
+  ./kn service list || fail_test
+  ./kn service create hello --wait-timeout 120 --force --image $KN_DEFAULT_TEST_IMAGE -e TARGET=Awesome || fail_test
+  ./kn service create foo --wait-timeout 120 --force --image $KN_DEFAULT_TEST_IMAGE -e TARGET=foo || fail_test
+  ./kn revision list || fail_test
+  ./kn service list || fail_test
+  ./kn service describe hello || fail_test
+  ./kn service describe svc1 || fail_test
+  ./kn route list || fail_test
+  ./kn service delete hello || fail_test
+  ./kn service delete foo || fail_test
+  ./kn service list | grep -q svc1 || fail_test
+  ./kn service delete svc1 || fail_test
 
   return $failed
 }
