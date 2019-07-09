@@ -233,8 +233,7 @@ function wait_until_pods_running() {
 function delete_knative_openshift() {
   echo ">> Bringing down Knative Serving"
   oc delete --ignore-not-found=true -n $OLM_NAMESPACE -f knative-serving.catalogsource-ci.yaml
-
-  oc delete project $SERVING_NAMESPACE
+  oc delete --ignore-not-found=true project $SERVING_NAMESPACE
 }
 
 function delete_test_namespace(){
