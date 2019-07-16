@@ -247,6 +247,9 @@ function teardown() {
   delete_knative_openshift
 }
 
+echo ">> Check resources 'cat /proc/meminfo'"
+cat /proc/meminfo
+
 create_test_namespace || exit 1
 
 failed=0
