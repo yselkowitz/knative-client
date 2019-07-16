@@ -247,8 +247,15 @@ function teardown() {
   delete_knative_openshift
 }
 
-echo ">> Check resources 'cat /proc/meminfo'"
+echo ">> Check resources"
+echo ">> - meminfo:"
 cat /proc/meminfo
+echo ">> - memory.limit_in_bytes"
+cat /sys/fs/cgroup/memory/memory.limit_in_bytes
+echo ">> - cpu.cfs_period_us"
+cat /sys/fs/cgroup/cpu/cpu.cfs_period_us
+echo ">> - cpu.cfs_quota_us"
+cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us
 
 create_test_namespace || exit 1
 
