@@ -18,8 +18,12 @@ CGO_ENABLED=0
 GOOS=linux
 
 build:
-	./hack/build.sh
+	./hack/build.sh -f
 .PHONY: build
+
+test-unit:
+	go test -v ./pkg/...
+.PHONY: test-unit
 
 test-e2e:
 	./openshift/e2e-tests-openshift.sh

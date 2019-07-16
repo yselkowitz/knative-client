@@ -167,7 +167,7 @@ function create_test_namespace(){
 
 function build_knative_client() {
   failed=0
-  ./hack/build.sh || failed=1
+  ./hack/build.sh -f || failed=1
   return $failed
 }
 
