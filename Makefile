@@ -22,7 +22,7 @@ build:
 .PHONY: build
 
 test-unit:
-	go test -v ./pkg/...
+	./hack/build.sh -t
 .PHONY: test-unit
 
 test-e2e:
