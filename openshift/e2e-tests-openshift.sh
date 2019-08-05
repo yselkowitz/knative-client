@@ -22,8 +22,8 @@ set -x
 readonly TEST_NAMESPACE=client-tests
 readonly TEST_NAMESPACE_ALT=client-tests-alt
 readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
-readonly SERVING_RELEASE_BRANCH="release-v0.6.0"
-readonly SERVING_RELEASE_TAG="v0.6.0"
+readonly SERVING_RELEASE_BRANCH="release-v0.7.1"
+readonly SERVING_RELEASE_TAG="v0.7.1"
 readonly KN_DEFAULT_TEST_IMAGE="gcr.io/knative-samples/helloworld-go"
 readonly SERVING_NAMESPACE=knative-serving
 
