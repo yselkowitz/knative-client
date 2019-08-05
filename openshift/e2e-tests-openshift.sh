@@ -21,11 +21,13 @@ set -x
 
 readonly TEST_NAMESPACE=client-tests
 readonly TEST_NAMESPACE_ALT=client-tests-alt
-readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
 readonly SERVING_RELEASE_BRANCH="release-v0.7.1"
 readonly SERVING_RELEASE_TAG="v0.7.1"
 readonly KN_DEFAULT_TEST_IMAGE="gcr.io/knative-samples/helloworld-go"
 readonly SERVING_NAMESPACE=knative-serving
+# TODO: Subscription.spec.sourceNamespace does not work on OCP v4.2. Need to revert after https://jira.coreos.com/browse/OLM-1190 is solved.
+readonly OLM_NAMESPACE="knative-serving"
+#readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
 
 env
 
@@ -79,6 +81,8 @@ function timeout() {
 function install_knative(){
   header "Installing Knative serving"
 
+  create_knative_namespace serving
+
   echo ">> Patching Knative Serving CatalogSource to reference serving release ${SERVING_RELEASE_BRANCH}"
   RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-serving/${SERVING_RELEASE_BRANCH}/openshift/release/knative-serving-${SERVING_RELEASE_TAG}.yaml"
   sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-serving.catalogsource.yaml > knative-serving.catalogsource-ci.yaml
@@ -104,9 +108,8 @@ function install_knative(){
   header "Knative serving Installed successfully"
 }
 
-function deploy_knative_operator(){
+function create_knative_namespace(){
   local COMPONENT="knative-$1"
-  local KIND=$2
 
   cat <<-EOF | oc apply -f -
 	apiVersion: v1
@@ -114,6 +117,12 @@ function deploy_knative_operator(){
 	metadata:
 	  name: ${COMPONENT}
 	EOF
+}
+
+function deploy_knative_operator(){
+  local COMPONENT="knative-$1"
+  local KIND=$2
+
   if oc get crd operatorgroups.operators.coreos.com >/dev/null 2>&1; then
     cat <<-EOF | oc apply -f -
 	apiVersion: operators.coreos.com/v1
