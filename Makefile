@@ -21,6 +21,10 @@ build:
 	./hack/build.sh -f
 .PHONY: build
 
+build-cross:
+	./openshift/release/build-cross.sh
+.PHONY: build-cross
+
 test-unit:
 	./hack/build.sh -t
 .PHONY: test-unit
