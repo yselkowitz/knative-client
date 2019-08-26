@@ -22,7 +22,7 @@ build:
 .PHONY: build
 
 build-cross:
-	./openshift/release/build-cross.sh
+	./hack/build.sh -x
 .PHONY: build-cross
 
 test-unit:
