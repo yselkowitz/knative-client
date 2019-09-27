@@ -17,6 +17,10 @@
 CGO_ENABLED=0
 GOOS=linux
 
+install: build
+	cp ./kn $(GOPATH)/bin
+.PHONY: install
+
 build:
 	./hack/build.sh -f
 .PHONY: build
