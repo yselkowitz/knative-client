@@ -1,5 +1,6 @@
 FROM rhel8/go-toolset:1.12.8 AS builder
 WORKDIR /opt/app-root/src/go/src/github.com/knative/client
+USER root
 COPY . .
 RUN TAG="v0.8.0" make build
 
