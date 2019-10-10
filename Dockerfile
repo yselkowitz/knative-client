@@ -11,9 +11,9 @@ LABEL \
       com.redhat.component="openshift-serverless-1-tech-preview-client-kn-rhel8-container" \
       name="openshift-serverless-1-tech-preview/client-kn-rhel8" \
       version="0.8.0" \
-      summary="Red Hat OpenShift Serverless 1 - CLI client kn" \
+      summary="Red Hat OpenShift Serverless 1 kn CLI" \
       description="CLI client 'kn' for managing Red Hat OpenShift Serverless 1" \
-      io.k8s.display-name="Red Hat OpenShift Serverless 1 - CLI client kn" \
+      io.k8s.display-name="Red Hat OpenShift Serverless 1 kn CLI" \
       io.k8s.description="CLI client 'kn' for managing Red Hat OpenShift Serverless 1" \
       io.openshift.build.source-location="https://github.com/openshift/knative-client" \
       maintainer="nshaikh@redhat.com"
