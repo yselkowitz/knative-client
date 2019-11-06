@@ -228,7 +228,13 @@ function enable_knative_interaction_with_registry() {
 
 function build_knative_client() {
   failed=0
-  ./hack/build.sh -f || failed=1
+  # run this cross platform build to ensure all the checks pass (as this is done while building artifacts)
+  ./hack/build.sh -x || failed=1
+
+  if [[ $failed -eq 0 ]]; then
+    mv kn-linux-amd64 kn
+  fi
+
   return $failed
 }
 
