@@ -22,7 +22,7 @@ set -x
 readonly SERVING_RELEASE="release-v0.8.1"
 readonly KN_DEFAULT_TEST_IMAGE="gcr.io/knative-samples/helloworld-go"
 readonly SERVING_NAMESPACE="knative-serving"
-readonly SERVICEMESH_NAMESPACE="istio-system"
+readonly SERVICEMESH_NAMESPACE="knative-serving-ingress"
 readonly E2E_TIMEOUT="60m"
 readonly E2E_PARALLEL="1"
 readonly CS_NS="openshift-marketplace"
@@ -125,49 +125,6 @@ function timeout() {
   return 0
 }
 
-function install_servicemesh(){
-  header "Installing ServiceMesh"
-
-  # Install the ServiceMesh Operator
-  oc apply -f https://raw.githubusercontent.com/openshift/knative-serving/$SERVING_RELEASE/openshift/servicemesh/operator-install.yaml
-
-  # Wait for the istio-operator pod to appear
-  timeout 900 '[[ $(oc get pods -n openshift-operators | grep -c istio-operator) -eq 0 ]]' || return 1
-
-  # Wait until the Operator pod is up and running
-  wait_until_pods_running openshift-operators || return 1
-
-  # Deploy ServiceMesh
-  oc new-project $SERVICEMESH_NAMESPACE
-  oc apply -n $SERVICEMESH_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/$SERVING_RELEASE/openshift/servicemesh/controlplane-install.yaml
-  cat <<EOF | oc apply -f -
-apiVersion: maistra.io/v1
-kind: ServiceMeshMemberRoll
-metadata:
-  name: default
-  namespace: ${SERVICEMESH_NAMESPACE}
-spec:
-  members:
-  - ${SERVING_NAMESPACE}
-  - kne2etests0
-  - kne2etests1
-  - kne2etests2
-  - kne2etests3
-  - kne2etests4
-  - kne2etests5
-EOF
-
-  # Wait for the ingressgateway pod to appear.
-  timeout 900 '[[ $(oc get pods -n $SERVICEMESH_NAMESPACE | grep -c istio-ingressgateway) -eq 0 ]]' || return 1
-
-  wait_until_service_has_external_ip $SERVICEMESH_NAMESPACE istio-ingressgateway || fail_test "Ingress has no external IP"
-  wait_until_hostname_resolves "$(kubectl get svc -n $SERVICEMESH_NAMESPACE istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-
-  wait_until_pods_running $SERVICEMESH_NAMESPACE
-
-  header "ServiceMesh installed successfully"
-}
-
 function install_knative_serving(){
   header "Installing Knative serving"
 
@@ -188,10 +145,14 @@ metadata:
   namespace: ${SERVING_NAMESPACE}
 EOF
 
-  # Wait for 6 pods to appear first
-  timeout 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return
+  # Wait for 4 pods to appear first
+  timeout 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 4 ]]' || return
 
   wait_until_pods_running $SERVING_NAMESPACE || return 1
+
+  wait_until_service_has_external_ip $SERVICEMESH_NAMESPACE istio-ingressgateway || fail_test "Ingress has no external IP"
+
+  wait_until_hostname_resolves "$(kubectl get svc -n $SERVICEMESH_NAMESPACE istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 
   header "Knative Serving installed successfully"
 }
@@ -317,8 +278,6 @@ scale_up_workers || exit 1
 failed=0
 
 (( !failed )) && build_knative_client || failed=1
-
-(( !failed )) && install_servicemesh || failed=1
 
 (( !failed )) && install_knative_serving || failed=1
 
