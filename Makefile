@@ -29,6 +29,10 @@ build-cross:
 	./hack/build.sh -x
 .PHONY: build-cross
 
+build-cross-package: build-cross
+	./package_cliartifacts.sh
+.PHONY: build-cross-package
+
 test-unit:
 	./hack/build.sh -t
 .PHONY: test-unit
