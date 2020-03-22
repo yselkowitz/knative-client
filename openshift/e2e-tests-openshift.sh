@@ -25,7 +25,7 @@ readonly SERVICEMESH_NAMESPACE="knative-serving-ingress"
 readonly E2E_TIMEOUT="60m"
 readonly OLM_NAMESPACE="openshift-marketplace"
 readonly EVENTING_NAMESPACE="knative-eventing"
-readonly EVENTING_CATALOGSOURCE="https://raw.githubusercontent.com/openshift/knative-eventing/master/openshift/olm/knative-eventing.catalogsource.yaml"
+readonly EVENTING_CATALOGSOURCE="https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.13.0/openshift/olm/knative-eventing.catalogsource.yaml"
 env
 
 # Loops until duration (car) is exceeded or command (cdr) returns non-zero
