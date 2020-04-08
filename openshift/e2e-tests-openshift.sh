@@ -24,8 +24,6 @@ readonly SERVING_NAMESPACE="knative-serving"
 readonly SERVICEMESH_NAMESPACE="knative-serving-ingress"
 readonly E2E_TIMEOUT="60m"
 readonly OLM_NAMESPACE="openshift-marketplace"
-readonly EVENTING_NAMESPACE="knative-eventing"
-readonly EVENTING_CATALOGSOURCE="https://raw.githubusercontent.com/openshift/knative-eventing/master/openshift/olm/knative-eventing.catalogsource.yaml"
 env
 
 # Loops until duration (car) is exceeded or command (cdr) returns non-zero
@@ -36,15 +34,6 @@ function timeout() {
     [[ $SECONDS -gt $TIMEOUT ]] && echo "ERROR: Timed out" && return 1
   done
   return 0
-}
-
-function create_namespace(){
-  cat <<-EOF | oc apply -f -
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: $1
-	EOF
 }
 
 function scale_up_workers(){
@@ -104,24 +93,6 @@ function install_serverless(){
   unset OPENSHIFT_BUILD_NAMESPACE
   /tmp/serverless-operator/hack/install.sh || return 1
   header "Serverless Operator installed successfully"
-}
-
-function install_knative_eventing(){
-  header "Installing Knative Eventing"
-
-  create_namespace $EVENTING_NAMESPACE
-  oc apply -n $OLM_NAMESPACE -f $EVENTING_CATALOGSOURCE
-  timeout 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE || return 1
-
-  # Deploy Knative Operators Eventing
-  deploy_knative_operator eventing KnativeEventing || return 1
-
-  # Wait for 6 pods to appear first
-  timeout 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 1
-
-  header "Knative Eventing installed successfully"
 }
 
 function deploy_knative_operator(){
@@ -236,8 +207,6 @@ failed=0
 (( !failed )) && build_knative_client || failed=1
 
 (( !failed )) && install_serverless || failed=1
-
-(( !failed )) && install_knative_eventing || failed=1
 
 (( !failed )) && run_e2e_tests || failed=1
 
