@@ -12,25 +12,24 @@ import (
 
 const (
 	DefaultRegistry = "docker.io"
-	DefaultRuntime  = "go"
+	DefaultRuntime  = "node"
 	DefaultTrigger  = "http"
 )
 
 // Client for managing Function instances.
 type Client struct {
-	verbose           bool     // print verbose logs
-	builder           Builder  // Builds a runnable image from Function source
-	pusher            Pusher   // Pushes the image assocaited with a Function.
-	deployer          Deployer // Deploys or Updates a Function
-	runner            Runner   // Runs the Function locally
-	remover           Remover  // Removes remote services
-	lister            Lister   // Lists remote services
-	describer         Describer
-	dnsProvider       DNSProvider      // Provider of DNS services
-	templates         string           // path to extensible templates
-	registry          string           // default registry for OCI image tags
-	domainSearchLimit int              // max recursion when deriving domain
-	progressListener  ProgressListener // progress listener
+	verbose          bool     // print verbose logs
+	builder          Builder  // Builds a runnable image from Function source
+	pusher           Pusher   // Pushes the image assocaited with a Function.
+	deployer         Deployer // Deploys or Updates a Function
+	runner           Runner   // Runs the Function locally
+	remover          Remover  // Removes remote services
+	lister           Lister   // Lists remote services
+	describer        Describer
+	dnsProvider      DNSProvider      // Provider of DNS services
+	templates        string           // path to extensible templates
+	registry         string           // default registry for OCI image tags
+	progressListener ProgressListener // progress listener
 }
 
 // Builder of Function source to runnable image.
@@ -67,7 +66,15 @@ type Remover interface {
 // Lister of deployed services.
 type Lister interface {
 	// List the Functions currently deployed.
-	List() ([]string, error)
+	List() ([]ListItem, error)
+}
+
+type ListItem struct {
+	Name     string `json:"name" yaml:"name"`
+	Runtime  string `json:"runtime" yaml:"runtime"`
+	URL      string `json:"url" yaml:"url"`
+	KService string `json:"kservice" yaml:"kservice"`
+	Ready    string `json:"ready" yaml:"ready"`
 }
 
 // ProgressListener is notified of task progress.
@@ -211,15 +218,6 @@ func WithDNSProvider(provider DNSProvider) Option {
 	}
 }
 
-// WithDomainSearchLimit sets the maximum levels of upward recursion used when
-// attempting to derive effective DNS name from root path.  Ignored if DNS was
-// explicitly set via WithName.
-func WithDomainSearchLimit(limit int) Option {
-	return func(c *Client) {
-		c.domainSearchLimit = limit
-	}
-}
-
 // WithTemplates sets the location to use for extensible templates.
 // Extensible templates are additional templates that exist on disk and are
 // not built into the binary.
@@ -239,20 +237,14 @@ func WithRegistry(registry string) Option {
 	}
 }
 
-// Create a Function.
-// Includes Initialization, Building, and Deploying.
-func (c *Client) Create(cfg Function) (err error) {
-	c.progressListener.SetTotal(4)
+// New Function.
+// Use Create, Build and Deploy independently for lower level control.
+func (c *Client) New(cfg Function) (err error) {
+	c.progressListener.SetTotal(3)
 	defer c.progressListener.Done()
 
-	// Initialize, writing out a template implementation and a config file.
-	// TODO: the Function's Initialize parameters are slightly different than
-	// the Initializer interface, and can thus cause confusion (one passes an
-	// optional name the other passes root path).  This could easily cause
-	// confusion and thus we may want to rename Initalizer to the more specific
-	// task it performs: ContextTemplateWriter or similar.
-	c.progressListener.Increment("Initializing new Function project")
-	err = c.Initialize(cfg)
+	// Create local template
+	err = c.Create(cfg)
 	if err != nil {
 		return
 	}
@@ -282,7 +274,7 @@ func (c *Client) Create(cfg Function) (err error) {
 		return
 	}
 
-	c.progressListener.Complete("Create complete")
+	c.progressListener.Complete("Done")
 
 	// TODO: use the knative client during deployment such that the actual final
 	// route can be returned from the deployment step, passed to the DNS Router
@@ -293,9 +285,9 @@ func (c *Client) Create(cfg Function) (err error) {
 	return
 }
 
-// Initialize creates a new Function project locally using the settings
-// provided on a Function object.
-func (c *Client) Initialize(cfg Function) (err error) {
+// Create a new Function project locally using the settings provided on a
+// Function object.
+func (c *Client) Create(cfg Function) (err error) {
 
 	// Create project root directory, if it doesn't already exist
 	if err = os.MkdirAll(cfg.Root, 0755); err != nil {
@@ -314,9 +306,8 @@ func (c *Client) Initialize(cfg Function) (err error) {
 		return
 	}
 
+	// Map requested fields to the newly created function.
 	f.Image = cfg.Image
-
-	// Set the name to that provided.
 	f.Name = cfg.Name
 
 	// Assert runtime was provided, or default.
@@ -375,9 +366,8 @@ func (c *Client) Initialize(cfg Function) (err error) {
 // Build the Function at path.  Errors if the Function is either unloadable or does
 // not contain a populated Image.
 func (c *Client) Build(path string) (err error) {
-	if c.verbose {
-		fmt.Println("Building Function image:")
-	}
+
+	fmt.Println("Building function image")
 
 	f, err := NewFunction(path)
 	if err != nil {
@@ -401,9 +391,8 @@ func (c *Client) Build(path string) (err error) {
 
 	// TODO: create a statu structure and return it here for optional
 	// use by the cli for user echo (rather than rely on verbose mode here)
-	if c.verbose {
-		fmt.Printf("Function image has been built, image: %v\n", f.Image)
-	}
+	fmt.Printf("Function image has been built, image: %v\n", f.Image)
+
 	return
 }
 
@@ -421,9 +410,7 @@ func (c *Client) Deploy(path string) (err error) {
 	}
 
 	// Push the image for the named service to the configured registry
-	if c.verbose {
-		fmt.Println("\nPushing Function image to the registry:")
-	}
+	fmt.Println("Pushing function image to the registry")
 	imageDigest, err := c.pusher.Push(f)
 	if err != nil {
 		return
@@ -436,9 +423,7 @@ func (c *Client) Deploy(path string) (err error) {
 	}
 
 	// Deploy a new or Update the previously-deployed Function
-	if c.verbose {
-		fmt.Println("\nDeploying Function to cluster:")
-	}
+	fmt.Println("Deploying function to the cluster")
 	return c.deployer.Deploy(f)
 }
 
@@ -476,7 +461,7 @@ func (c *Client) Run(root string) error {
 }
 
 // List currently deployed Functions.
-func (c *Client) List() ([]string, error) {
+func (c *Client) List() ([]ListItem, error) {
 	// delegate to concrete implementation of lister entirely.
 	return c.lister.List()
 }
@@ -549,7 +534,7 @@ func (n *noopRemover) Remove(string) error { return nil }
 
 type noopLister struct{ output io.Writer }
 
-func (n *noopLister) List() ([]string, error) { return []string{}, nil }
+func (n *noopLister) List() ([]ListItem, error) { return []ListItem{}, nil }
 
 type noopDNSProvider struct{ output io.Writer }
 

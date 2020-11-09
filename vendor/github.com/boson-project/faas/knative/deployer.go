@@ -57,7 +57,7 @@ func (d *Deployer) Deploy(f faas.Function) (err error) {
 			if d.Verbose {
 				fmt.Printf("Creating Knative Service: %v\n", serviceName)
 			}
-			err := client.CreateService(generateNewService(serviceName, f.ImageWithDigest(), f.Runtime != "quarkus"))
+			err := client.CreateService(generateNewService(serviceName, f.ImageWithDigest(), f.Runtime))
 			if err != nil {
 				err = fmt.Errorf("knative deployer failed to deploy the service: %v", err)
 				return err
@@ -91,6 +91,14 @@ func (d *Deployer) Deploy(f faas.Function) (err error) {
 			err = fmt.Errorf("knative deployer failed to update the service: %v", err)
 			return err
 		}
+
+		route, err := client.GetRoute(serviceName)
+		if err != nil {
+			err = fmt.Errorf("knative deployer failed to get the route: %v", err)
+			return err
+		}
+
+		fmt.Println("Function updated at URL: " + route.Status.URL.String())
 	}
 
 	return nil
@@ -106,7 +114,7 @@ func probeFor(url string) *corev1.Probe {
 	}
 }
 
-func generateNewService(name, image string, healthChecks bool) *servingv1.Service {
+func generateNewService(name, image, runtime string) *servingv1.Service {
 	containers := []corev1.Container{
 		{
 			Image: image,
@@ -116,7 +124,7 @@ func generateNewService(name, image string, healthChecks bool) *servingv1.Servic
 		},
 	}
 
-	if healthChecks {
+	if runtime != "quarkus" {
 		containers[0].LivenessProbe = probeFor("/health/liveness")
 		containers[0].ReadinessProbe = probeFor("/health/readiness")
 	}
@@ -125,7 +133,8 @@ func generateNewService(name, image string, healthChecks bool) *servingv1.Servic
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				"bosonFunction": "true",
+				"boson.dev/function": "true",
+				"boson.dev/runtime":  runtime,
 			},
 		},
 		Spec: v1.ServiceSpec{

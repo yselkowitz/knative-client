@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"text/tabwriter"
 
 	"github.com/ory/viper"
 	"github.com/spf13/cobra"
@@ -17,24 +18,24 @@ import (
 
 func init() {
 	root.AddCommand(listCmd)
-	listCmd.Flags().StringP("namespace", "n", "", "Override namespace in which to search for Functions.  Default is to use currently active underlying platform setting - $FAAS_NAMESPACE")
-	listCmd.Flags().StringP("format", "f", "human", "optionally specify output format (human|plain|json|xml|yaml) $FAAS_FORMAT")
-
+	listCmd.Flags().StringP("namespace", "n", "", "Namespace of the function to undeploy. By default, the functions of the actual active namespace are listed. (Env: $FUNC_NAMESPACE)")
+	listCmd.Flags().StringP("format", "f", "human", "Output format (human|plain|json|xml|yaml) (Env: $FUNC_FORMAT)")
 	err := listCmd.RegisterFlagCompletionFunc("format", CompleteOutputFormatList)
 	if err != nil {
-		fmt.Println("Error while calling RegisterFlagCompletionFunc: ", err)
+		fmt.Println("internal: error while calling RegisterFlagCompletionFunc: ", err)
 	}
 }
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Lists deployed Functions",
-	Long: `Lists deployed Functions
+	Short: "List functions",
+	Long: `List functions
 
-Lists all deployed functions. The namespace defaults to the value in faas.yaml
-or the namespace currently active in the user's Kubernetes configuration. The
-namespace may be specified on the command line using the --namespace or -n flag.
-If specified this will overwrite the value in faas.yaml.
+Lists all deployed functions in a given namespace.
+`,
+	Example: `
+# List all functions in the current namespace in human readable format
+kn func list
 `,
 	SuggestFor: []string{"ls", "lsit"},
 	PreRunE:    bindEnv("namespace", "format"),
@@ -54,12 +55,13 @@ func runList(cmd *cobra.Command, args []string) (err error) {
 		faas.WithVerbose(config.Verbose),
 		faas.WithLister(lister))
 
-	nn, err := client.List()
+	items, err := client.List()
 	if err != nil {
 		return
 	}
 
-	write(os.Stdout, names(nn), config.Format)
+	write(os.Stdout, listItems(items), config.Format)
+
 	return
 }
 
@@ -83,30 +85,33 @@ func newListConfig() listConfig {
 // Output Formatting (serializers)
 // -------------------------------
 
-type names []string
+type listItems []faas.ListItem
 
-func (nn names) Human(w io.Writer) error {
-	return nn.Plain(w)
+func (items listItems) Human(w io.Writer) error {
+	return items.Plain(w)
 }
 
-func (nn names) Plain(w io.Writer) error {
-	for _, name := range nn {
-		fmt.Fprintln(w, name)
+func (items listItems) Plain(w io.Writer) error {
+
+	// minwidth, tabwidth, padding, padchar, flags
+	tabWriter := tabwriter.NewWriter(w, 0, 8, 2, ' ', 0)
+	defer tabWriter.Flush()
+
+	fmt.Fprintf(tabWriter, "%s\t%s\t%s\t%s\t%s\n", "NAME", "RUNTIME", "URL", "KSERVICE", "READY")
+	for _, item := range items {
+		fmt.Fprintf(tabWriter, "%s\t%s\t%s\t%s\t%s\n", item.Name, item.Runtime, item.URL, item.KService, item.Ready)
 	}
 	return nil
 }
 
-func (nn names) JSON(w io.Writer) error {
-	return json.NewEncoder(w).Encode(nn)
+func (items listItems) JSON(w io.Writer) error {
+	return json.NewEncoder(w).Encode(items)
 }
 
-func (nn names) XML(w io.Writer) error {
-	return xml.NewEncoder(w).Encode(nn)
+func (items listItems) XML(w io.Writer) error {
+	return xml.NewEncoder(w).Encode(items)
 }
 
-func (nn names) YAML(w io.Writer) error {
-	// the yaml.v2 package refuses to directly serialize a []string unless
-	// exposed as a public struct member; so an inline anonymous is used.
-	ff := struct{ Names []string }{nn}
-	return yaml.NewEncoder(w).Encode(ff.Names)
+func (items listItems) YAML(w io.Writer) error {
+	return yaml.NewEncoder(w).Encode(items)
 }

@@ -14,18 +14,18 @@ func init() {
 // completionCmd represents the completion command
 var completionCmd = &cobra.Command{
 	Use:   "completion <bash|zsh|fish>",
-	Short: "Generate bash/zsh completion scripts",
+	Short: "Generate completion scripts for bash, fish and zsh",
 	Long: `To load completion run
 
 For zsh:
-source <(faas completion zsh)
+source <(func completion zsh)
 
 If you would like to use alias:
-alias f=faas
-compdef _faas f
+alias f=func
+compdef _func f
 
 For bash:
-source <(faas completion bash)
+source <(func completion bash)
 
 `,
 	ValidArgs: []string{"bash", "zsh", "fish"},

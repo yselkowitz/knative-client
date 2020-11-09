@@ -34,7 +34,7 @@ replace (
 )
 
 replace (
-	github.com/boson-project/faas => github.com/boson-project/faas v0.8.0
+	github.com/boson-project/faas => github.com/boson-project/faas v0.9.0
 
 	// Pin conflicting dependency versions
 	// Buildpacks required version

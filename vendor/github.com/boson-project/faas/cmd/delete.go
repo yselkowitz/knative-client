@@ -13,25 +13,28 @@ import (
 
 func init() {
 	root.AddCommand(deleteCmd)
-	deleteCmd.Flags().BoolP("confirm", "c", false, "Prompt to confirm all configuration options - $FAAS_CONFIRM")
-	deleteCmd.Flags().StringP("path", "p", cwd(), "Path to the project which should be deleted - $FAAS_PATH")
-	deleteCmd.Flags().StringP("namespace", "n", "", "Override namespace in which to search for Functions.  Default is to use currently active underlying platform setting - $FAAS_NAMESPACE")
+	deleteCmd.Flags().BoolP("confirm", "c", false, "Prompt to confirm all configuration options (Env: $FUNC_CONFIRM)")
+	deleteCmd.Flags().StringP("path", "p", cwd(), "Path to the function project that should be undeployed (Env: $FUNC_PATH)")
+	deleteCmd.Flags().StringP("namespace", "n", "", "Namespace of the function to undeploy. By default, the namespace in func.yaml is used or the actual active namespace if not set in the configuration. (Env: $FUNC_NAMESPACE)")
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete <name>",
-	Short: "Delete a Function deployment",
-	Long: `Delete a Function deployment
+	Use:   "delete [NAME]",
+	Short: "Undeploy a function",
+	Long: `Undeploy a function
 
-Removes a deployed function from the cluster. The user may specify a function
-by name, path using the --path or -p flag, or if neither of those are provided,
-the current directory will be searched for a faas.yaml configuration file to
-determine the function to be removed.
+This command undeploys a function from the cluster. By default the function from 
+the project in the current directory is undeployed. Alternatively either the name 
+of the function can be given as argument or the project path provided with --path.
 
-The namespace defaults to the value in faas.yaml or the namespace currently
-active in the user's Kubernetes configuration. The namespace may be specified
-on the command line using the --namespace or -n flag, and if so this will
-overwrite the value in faas.yaml.
+No local files are deleted.
+`,
+	Example: `
+# Undeploy the function defined in the local directory
+kn func delete
+
+# Undeploy the function 'myfunc' in namespace 'apps'
+kn func delete -n apps myfunc
 `,
 	SuggestFor:        []string{"remove", "rm", "del"},
 	ValidArgsFunction: CompleteFunctionList,
@@ -49,10 +52,15 @@ func runDelete(cmd *cobra.Command, args []string) (err error) {
 
 	// Check if the Function has been initialized
 	if !function.Initialized() {
-		return fmt.Errorf("the given path '%v' does not contain an initialized Function.", config.Path)
+		return fmt.Errorf("the given path '%v' does not contain an initialized function", config.Path)
 	}
 
-	remover, err := knative.NewRemover(config.Namespace)
+	ns := config.Namespace
+	if ns == "" {
+		ns = function.Namespace
+	}
+
+	remover, err := knative.NewRemover(ns)
 	if err != nil {
 		return
 	}

@@ -1,4 +1,4 @@
-// Copyright © 2020 The Knative Authors
+// Copyright © 2020 The OpenShift Knative Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package root
 
 import (
+	// Add #plugins# import here. Don't remove this line, it triggers an automatic replacement.
 	_ "github.com/boson-project/faas/plugin"
 )
 
