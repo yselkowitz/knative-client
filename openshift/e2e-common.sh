@@ -85,7 +85,6 @@ build_knative_client() {
   return $failed
 }
 
-run_client_e2e_tests(){
 run_unit_tests() {
   failed=0
   go test -v ./... || failed=1
