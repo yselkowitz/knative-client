@@ -14,36 +14,84 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-branch=${1-'master'}
+if [ -n "$1" ]; then
+  # Use provided branch value
+  branch=$1
+else
+  # Use current branch otherwise
+  branch=$(git rev-parse --abbrev-ref HEAD)
+fi
+version=$(echo ${branch} | cut -d '-' -f 2)
+tag=${version:-'master'}
 
 cat <<EOF
-tag_specification:
-  name: '4.1'
-  namespace: ocp
-promotion:
-  cluster: https://api.ci.openshift.org
-  namespace: openshift
-  name: $branch
 base_images:
   base:
-    name: '4.0'
+    name: ubi-minimal
     namespace: ocp
-    tag: base
+    tag: "8"
+binary_build_commands: |
+  TAG=${tag} make install
+  TAG=${tag} make build-cross
 build_root:
   project_image:
     dockerfile_path: openshift/ci-operator/build-image/Dockerfile
 canonical_go_repository: github.com/knative/client
-binary_build_commands: make build
-tests:
-- as: e2e
-  commands: "make test-e2e"
-  openshift_installer_src:
-    cluster_profile: aws
+images:
+- dockerfile_path: openshift/ci-operator/knative-images/client/Dockerfile
+  from: base
+  inputs:
+    bin:
+      paths:
+      - destination_dir: .
+        source_path: /go/bin/kn
+  to: knative-client
+- dockerfile_path: openshift/ci-operator/knative-images/client/Dockerfile.cliartifacts
+  inputs:
+    bin:
+      paths:
+      - destination_dir: .
+        source_path: /go/src/github.com/knative/client/kn-linux-amd64
+      - destination_dir: .
+        source_path: /go/src/github.com/knative/client/kn-darwin-amd64
+      - destination_dir: .
+        source_path: /go/src/github.com/knative/client/kn-windows-amd64.exe
+      - destination_dir: .
+        source_path: /go/src/github.com/knative/client/LICENSE
+      - destination_dir: .
+        source_path: /go/src/github.com/knative/client/package_cliartifacts.sh
+  to: kn-cli-artifacts
+- dockerfile_path: openshift/ci-operator/knative-test-images/helloworld/Dockerfile
+  from: base
+  inputs:
+    test-bin:
+      paths:
+      - destination_dir: .
+        source_path: /go/bin/helloworld
+  to: knative-client-test-helloworld
+promotion:
+  name: $branch
+  namespace: openshift
 resources:
   '*':
-    limits:
-      memory: 4Gi
     requests:
-      cpu: 100m
-      memory: 200Mi
+      memory: 2Gi
+tag_specification:
+  name: "4.5"
+  namespace: ocp
+test_binary_build_commands: make test-install
+tests:
+- as: e2e-aws-ocp-45
+  steps:
+    cluster_profile: aws
+    test:
+    - as: test
+      cli: latest
+      commands: make test-e2e
+      from: src
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+    workflow: ipi-aws
 EOF
