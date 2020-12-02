@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly ROOT_DIR=$(dirname $0)/..
-source ${ROOT_DIR}/vendor/knative.dev/hack/library.sh
-source ${ROOT_DIR}/vendor/knative.dev/hack/e2e-tests.sh
+readonly ROOT_DIR="/go/src/github.com/knative/client"
+source ${ROOT_DIR}/scripts/test-infra/library.sh
+source ${ROOT_DIR}/scripts/test-infra/e2e-tests.sh
 
 readonly KN_DEFAULT_TEST_IMAGE="gcr.io/knative-samples/helloworld-go"
 readonly SERVING_NAMESPACE="knative-serving"
@@ -81,7 +81,7 @@ run_client_e2e_tests(){
   header "Running e2e tests"
   local failed=0
   # Add local dir to have access to built kn
-  export PATH=$PATH:${REPO_ROOT_DIR}
+  export PATH=$PATH:${ROOT_DIR}
   export GO111MODULE=on
   # In CI environment GOFLAGS is set to '-mod=vendor', unsetting it and providing explicit flag below
   # while invoking go e2e tests. Unsetting to keep using -mod=vendor irrespective of whether GOFLAGS is set or not.
@@ -188,6 +188,24 @@ install_knative_eventing_branch() {
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
   header "Knative Eventing installed successfully"
   popd
+}
+
+install_serverless_operator_branch() {
+  local branch=$1
+  local operator_dir=/tmp/serverless-operator
+  local failed=0
+  header "Installing serverless operator from openshift-knative/serverless-operator branch $branch"
+  rm -rf $operator_dir
+  git clone --branch $branch https://github.com/openshift-knative/serverless-operator.git $operator_dir || failed=1
+  pushd $operator_dir
+  # unset OPENSHIFT_BUILD_NAMESPACE (old CI) and OPENSHIFT_CI (new CI) as its used in serverless-operator's CI
+  # environment as a switch to use CI built images, we want pre-built images of k-s-o and k-o-i
+  unset OPENSHIFT_BUILD_NAMESPACE
+  unset OPENSHIFT_CI
+  ./hack/install.sh || failed=1
+  subheader "Successfully installed serverless operator."
+  popd
+  return $failed
 }
 
 # Add to exec script if needed
