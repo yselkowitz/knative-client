@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/boson-project/faas v0.0.0-00010101000000-000000000000
+	github.com/maximilien/kn-source-pkg v0.5.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.1-0.20201006035406-b97b5ead31f7
@@ -16,9 +17,10 @@ require (
 	k8s.io/cli-runtime v0.18.8
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/code-generator v0.18.8
-	knative.dev/eventing v0.18.0
+	knative.dev/eventing v0.18.5-0.20201105155307-650096a39064
+	knative.dev/kn-plugin-source-kafka v0.0.0-20201203183209-e1f755efaca3
 	knative.dev/networking v0.0.0-20200922180040-a71b40c69b15
-	knative.dev/pkg v0.0.0-20200922164940-4bf40ad82aab
+	knative.dev/pkg v0.0.0-20201026165741-2f75016c1368
 	knative.dev/serving v0.18.0
 	sigs.k8s.io/yaml v1.2.0
 )
