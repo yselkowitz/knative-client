@@ -155,7 +155,6 @@ github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/jsonschema
 github.com/googleapis/gnostic/openapiv2
 # github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc
-## explicit
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
 # github.com/grpc-ecosystem/grpc-gateway v1.14.8
@@ -199,11 +198,17 @@ github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/maximilien/kn-source-pkg v0.6.3
+github.com/maximilien/kn-source-pkg/pkg/client
+github.com/maximilien/kn-source-pkg/pkg/commands/source
+github.com/maximilien/kn-source-pkg/pkg/core
+github.com/maximilien/kn-source-pkg/pkg/factories
+github.com/maximilien/kn-source-pkg/pkg/types
+github.com/maximilien/kn-source-pkg/pkg/types/typesfakes
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
 github.com/mitchellh/go-homedir
-# github.com/mitchellh/mapstructure v1.3.1
-## explicit
+# github.com/mitchellh/mapstructure v1.3.3
 github.com/mitchellh/mapstructure
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 github.com/modern-go/concurrent
@@ -247,20 +252,16 @@ github.com/russross/blackfriday/v2
 github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.7.0
 github.com/sirupsen/logrus
-# github.com/smartystreets/assertions v1.0.0
-## explicit
 # github.com/spf13/afero v1.2.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/cast v1.3.1
-## explicit
 github.com/spf13/cast
 # github.com/spf13/cobra v1.1.3
 ## explicit
 github.com/spf13/cobra
 github.com/spf13/cobra/doc
 # github.com/spf13/jwalterweatherman v1.1.0
-## explicit
 github.com/spf13/jwalterweatherman
 # github.com/spf13/pflag v1.0.5
 ## explicit
@@ -505,7 +506,6 @@ gopkg.in/evanphx/json-patch.v4
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/ini.v1 v1.56.0
-## explicit
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
@@ -564,6 +564,7 @@ k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apimachinery v0.19.7
 ## explicit
+k8s.io/apimachinery/pkg/api/apitesting/fuzzer
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -778,6 +779,7 @@ knative.dev/eventing/pkg/apis/configs
 knative.dev/eventing/pkg/apis/configs/v1alpha1
 knative.dev/eventing/pkg/apis/duck
 knative.dev/eventing/pkg/apis/duck/v1
+knative.dev/eventing/pkg/apis/duck/v1alpha1
 knative.dev/eventing/pkg/apis/duck/v1beta1
 knative.dev/eventing/pkg/apis/eventing
 knative.dev/eventing/pkg/apis/eventing/v1
@@ -802,9 +804,30 @@ knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1beta1/fake
 knative.dev/eventing/pkg/client/clientset/versioned/typed/messaging/v1beta1
 knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1alpha2
 knative.dev/eventing/pkg/client/clientset/versioned/typed/sources/v1alpha2/fake
+# knative.dev/eventing-kafka v0.21.0
+knative.dev/eventing-kafka/pkg/apis/bindings
+knative.dev/eventing-kafka/pkg/apis/bindings/v1alpha1
+knative.dev/eventing-kafka/pkg/apis/bindings/v1beta1
+knative.dev/eventing-kafka/pkg/apis/duck/v1alpha1
+knative.dev/eventing-kafka/pkg/apis/messaging
+knative.dev/eventing-kafka/pkg/apis/messaging/v1alpha1
+knative.dev/eventing-kafka/pkg/apis/messaging/v1beta1
+knative.dev/eventing-kafka/pkg/apis/sources/v1alpha1
+knative.dev/eventing-kafka/pkg/apis/sources/v1beta1
+knative.dev/eventing-kafka/pkg/client/clientset/versioned/scheme
+knative.dev/eventing-kafka/pkg/client/clientset/versioned/typed/sources/v1alpha1
+knative.dev/eventing-kafka/pkg/client/clientset/versioned/typed/sources/v1alpha1/fake
+knative.dev/eventing-kafka/pkg/common/constants
 # knative.dev/hack v0.0.0-20210203173706-8368e1f6eacf
 ## explicit
 knative.dev/hack
+# knative.dev/kn-plugin-source-kafka v0.21.0
+## explicit
+knative.dev/kn-plugin-source-kafka/pkg/client
+knative.dev/kn-plugin-source-kafka/pkg/factories
+knative.dev/kn-plugin-source-kafka/pkg/root
+knative.dev/kn-plugin-source-kafka/pkg/types
+knative.dev/kn-plugin-source-kafka/plugin
 # knative.dev/networking v0.0.0-20210216014426-94bfc013982b
 ## explicit
 knative.dev/networking/pkg
@@ -818,6 +841,7 @@ knative.dev/pkg/apis/duck/ducktypes
 knative.dev/pkg/apis/duck/v1
 knative.dev/pkg/apis/duck/v1alpha1
 knative.dev/pkg/apis/duck/v1beta1
+knative.dev/pkg/apis/testing/fuzzer
 knative.dev/pkg/changeset
 knative.dev/pkg/client/injection/ducks/duck/v1/addressable
 knative.dev/pkg/codegen/cmd/injection-gen
@@ -854,6 +878,7 @@ knative.dev/pkg/tracing/config
 knative.dev/pkg/tracing/propagation
 knative.dev/pkg/tracing/propagation/tracecontextb3
 knative.dev/pkg/tracker
+knative.dev/pkg/webhook/resourcesemantics
 # knative.dev/serving v0.21.0
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
