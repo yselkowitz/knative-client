@@ -3,6 +3,7 @@ module knative.dev/client
 go 1.15
 
 require (
+	github.com/boson-project/func main
 	github.com/google/go-cmp v0.5.5
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/mitchellh/go-homedir v1.1.0
@@ -23,6 +24,7 @@ require (
 	k8s.io/code-generator v0.19.7
 	knative.dev/eventing v0.22.0
 	knative.dev/hack v0.0.0-20210325223819-b6ab329907d3
+	knative.dev/kn-plugin-source-kafka v0.22.0
 	knative.dev/networking v0.0.0-20210331064822-999a7708876c
 	knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0
 	knative.dev/serving v0.22.0
