@@ -31,6 +31,8 @@ $(TEMPLATE_PACKAGE): templates $(TEMPLATE_DIRS) $(TEMPLATE_FILES)
 	rm -rf templates/python/http/__pycache__
 	rm -rf templates/typescript/events/node_modules
 	rm -rf templates/typescript/http/node_modules
+	rm -rf templates/rust/events/target
+	rm -rf templates/rust/http/target
 	# to install pkger:  go get github.com/markbates/pkger/cmd/pkger
 	$(PKGER)
 
@@ -54,7 +56,7 @@ $(LINUX):
 $(WINDOWS):
 	env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o $(WINDOWS) -ldflags "-X main.date=$(DATE) -X main.vers=$(VERS) -X main.hash=$(HASH)" ./cmd/$(BIN)
 
-test: test-binary test-node test-python test-quarkus test-go test-typescript
+test: test-binary test-node test-python test-quarkus test-go test-typescript test-rust
 
 test-binary:
 	go test -race -cover -coverprofile=coverage.out ./...
@@ -79,8 +81,12 @@ test-go:
 	cd templates/go/events && go test
 	cd templates/go/http && go test
 
+test-rust:
+	cd templates/rust/events && cargo test && cargo clean
+	cd templates/rust/http && cargo test && cargo clean
+
 test-integration:
-	go test -tags integration ./...
+	go test -tags integration ./... -v
 
 bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.40.1

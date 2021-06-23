@@ -6,7 +6,8 @@ import (
 	clientservingv1 "knative.dev/client/pkg/serving/v1"
 	"knative.dev/pkg/apis"
 
-	bosonFunc "github.com/boson-project/func"
+	fn "github.com/boson-project/func"
+	"github.com/boson-project/func/k8s"
 )
 
 const (
@@ -22,7 +23,7 @@ type Lister struct {
 func NewLister(namespaceOverride string) (l *Lister, err error) {
 	l = &Lister{}
 
-	namespace, err := GetNamespace(namespaceOverride)
+	namespace, err := k8s.GetNamespace(namespaceOverride)
 	if err != nil {
 		return
 	}
@@ -31,7 +32,7 @@ func NewLister(namespaceOverride string) (l *Lister, err error) {
 	return
 }
 
-func (l *Lister) List(ctx context.Context) (items []bosonFunc.ListItem, err error) {
+func (l *Lister) List(ctx context.Context) (items []fn.ListItem, err error) {
 
 	client, err := NewServingClient(l.Namespace)
 	if err != nil {
@@ -54,7 +55,7 @@ func (l *Lister) List(ctx context.Context) (items []bosonFunc.ListItem, err erro
 			}
 		}
 
-		listItem := bosonFunc.ListItem{
+		listItem := fn.ListItem{
 			Name:      service.Name,
 			Namespace: service.Namespace,
 			Runtime:   service.Labels["boson.dev/runtime"],

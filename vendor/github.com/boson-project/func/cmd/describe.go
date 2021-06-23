@@ -11,14 +11,14 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	bosonFunc "github.com/boson-project/func"
+	fn "github.com/boson-project/func"
 	"github.com/boson-project/func/knative"
 )
 
 func init() {
 	root.AddCommand(describeCmd)
 	describeCmd.Flags().StringP("namespace", "n", "", "Namespace of the function. By default, the namespace in func.yaml is used or the actual active namespace if not set in the configuration. (Env: $FUNC_NAMESPACE)")
-	describeCmd.Flags().StringP("output", "o", "human", "Output format (human|plain|json|xml|yaml) (Env: $FUNC_OUTPUT)")
+	describeCmd.Flags().StringP("output", "o", "human", "Output format (human|plain|json|xml|yaml|url) (Env: $FUNC_OUTPUT)")
 	describeCmd.Flags().StringP("path", "p", cwd(), "Path to the project directory (Env: $FUNC_PATH)")
 
 	err := describeCmd.RegisterFlagCompletionFunc("output", CompleteOutputFormatList)
@@ -51,7 +51,7 @@ kn func describe --output yaml --path myotherfunc
 func runDescribe(cmd *cobra.Command, args []string) (err error) {
 	config := newDescribeConfig(args)
 
-	function, err := bosonFunc.NewFunction(config.Path)
+	function, err := fn.NewFunction(config.Path)
 	if err != nil {
 		return
 	}
@@ -67,9 +67,9 @@ func runDescribe(cmd *cobra.Command, args []string) (err error) {
 	}
 	describer.Verbose = config.Verbose
 
-	client := bosonFunc.New(
-		bosonFunc.WithVerbose(config.Verbose),
-		bosonFunc.WithDescriber(describer))
+	client := fn.New(
+		fn.WithVerbose(config.Verbose),
+		fn.WithDescriber(describer))
 
 	d, err := client.Describe(cmd.Context(), config.Name, config.Path)
 	if err != nil {
@@ -109,7 +109,7 @@ func newDescribeConfig(args []string) describeConfig {
 // Output Formatting (serializers)
 // -------------------------------
 
-type description bosonFunc.Description
+type description fn.Description
 
 func (d description) Human(w io.Writer) error {
 	fmt.Fprintln(w, "Function name:")
@@ -160,4 +160,11 @@ func (d description) XML(w io.Writer) error {
 
 func (d description) YAML(w io.Writer) error {
 	return yaml.NewEncoder(w).Encode(d)
+}
+
+func (d description) URL(w io.Writer) error {
+	if len(d.Routes) > 0 {
+		fmt.Fprintf(w, "%s\n", d.Routes[0])
+	}
+	return nil
 }
