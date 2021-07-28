@@ -204,7 +204,7 @@ install_serverless_operator_branch() {
   unset OPENSHIFT_CI
 
   # Install all components Serving,Eventing,Strimzi and Kafka
-  SCALE_UP=6 make install-all || failed=1
+  make install-all || failed=1
   subheader "Successfully installed serverless operator."
 
   header "Applying Strimzi Topic CR"
