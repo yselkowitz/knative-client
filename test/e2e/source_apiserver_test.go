@@ -110,36 +110,38 @@ func apiServerSourceDelete(r *test.KnRunResultCollector, sourceName string) {
 }
 
 func setupForSourceAPIServer(t *testing.T, it *test.KnTest) {
-	_, err := test.NewKubectl(it.Kn().Namespace()).Run("create", "serviceaccount", testServiceAccount)
+	kubectl := test.NewKubectl(it.Kn().Namespace())
+	_, err := kubectl.Run("create", "serviceaccount", testServiceAccount)
 	assert.NilError(t, err)
 
-	_, err = test.Kubectl{}.Run("create", "clusterrole", clusterRolePrefix+it.Kn().Namespace(), "--verb=get,list,watch", "--resource=events,namespaces")
+	_, err = kubectl.Run("create", "role", clusterRolePrefix+it.Kn().Namespace(), "--verb=get,list,watch", "--resource=events,namespaces")
 	assert.NilError(t, err)
 
-	_, err = test.Kubectl{}.Run(
+	_, err = kubectl.Run(
 		"create",
-		"clusterrolebinding",
+		"rolebinding",
 		clusterRoleBindingPrefix+it.Kn().Namespace(),
-		"--clusterrole="+clusterRolePrefix+it.Kn().Namespace(),
+		"--role="+clusterRolePrefix+it.Kn().Namespace(),
 		"--serviceaccount="+it.Kn().Namespace()+":"+testServiceAccount)
 	assert.NilError(t, err)
 }
 
 func tearDownForSourceAPIServer(t *testing.T, it *test.KnTest) error {
+	kubectl := test.NewKubectl(it.Kn().Namespace())
 	saCmd := []string{"delete", "serviceaccount", testServiceAccount}
-	_, err := test.NewKubectl(it.Kn().Namespace()).Run(saCmd...)
+	_, err := kubectl.Run(saCmd...)
 	if err != nil {
 		return fmt.Errorf("Error executing %q: %w", strings.Join(saCmd, " "), err)
 	}
 
-	crCmd := []string{"delete", "clusterrole", clusterRolePrefix + it.Kn().Namespace()}
-	_, err = test.Kubectl{}.Run(crCmd...)
+	crCmd := []string{"delete", "role", clusterRolePrefix + it.Kn().Namespace()}
+	_, err = kubectl.Run(crCmd...)
 	if err != nil {
 		return fmt.Errorf("Error executing %q: %w", strings.Join(saCmd, " "), err)
 	}
 
-	crbCmd := []string{"delete", "clusterrolebinding", clusterRoleBindingPrefix + it.Kn().Namespace()}
-	_, err = test.Kubectl{}.Run(crbCmd...)
+	crbCmd := []string{"delete", "rolebinding", clusterRoleBindingPrefix + it.Kn().Namespace()}
+	_, err = kubectl.Run(crbCmd...)
 	if err != nil {
 		return fmt.Errorf("Error executing %q: %w", strings.Join(saCmd, " "), err)
 	}
