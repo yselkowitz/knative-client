@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/google/go-cmp v0.5.6
+	github.com/maximilien/kn-source-pkg v0.6.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
@@ -28,4 +29,4 @@ require (
 replace github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
 
 //TODO: replace once func release is cut
-replace knative.dev/kn-plugin-func => knative.dev/kn-plugin-func v0.16.1-0.20210727184450-1a1288a6d43e
+replace knative.dev/kn-plugin-func => knative.dev/kn-plugin-func v0.16.1-0.20210802153742-92b309f7916a

@@ -440,12 +440,14 @@ github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/maximilien/kn-source-pkg v0.6.3
+## explicit
 github.com/maximilien/kn-source-pkg/pkg/client
 github.com/maximilien/kn-source-pkg/pkg/commands/source
 github.com/maximilien/kn-source-pkg/pkg/core
 github.com/maximilien/kn-source-pkg/pkg/factories
 github.com/maximilien/kn-source-pkg/pkg/types
 github.com/maximilien/kn-source-pkg/pkg/types/typesfakes
+github.com/maximilien/kn-source-pkg/test/e2e
 # github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 github.com/mgutz/ansi
 # github.com/mitchellh/go-homedir v1.1.0
@@ -1179,7 +1181,7 @@ knative.dev/eventing-kafka/pkg/common/constants
 # knative.dev/hack v0.0.0-20210602212444-509255f29a24
 ## explicit
 knative.dev/hack
-# knative.dev/kn-plugin-func v0.17.0 => knative.dev/kn-plugin-func v0.16.1-0.20210727184450-1a1288a6d43e
+# knative.dev/kn-plugin-func v0.17.0 => knative.dev/kn-plugin-func v0.16.1-0.20210802153742-92b309f7916a
 ## explicit
 knative.dev/kn-plugin-func
 knative.dev/kn-plugin-func/buildpacks
@@ -1303,4 +1305,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit
 sigs.k8s.io/yaml
 # github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
-# knative.dev/kn-plugin-func => knative.dev/kn-plugin-func v0.16.1-0.20210727184450-1a1288a6d43e
+# knative.dev/kn-plugin-func => knative.dev/kn-plugin-func v0.16.1-0.20210802153742-92b309f7916a

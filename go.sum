@@ -1689,8 +1689,8 @@ knative.dev/hack v0.0.0-20210602212444-509255f29a24 h1:eFcqwqJueFb2yY7tJVhLnDmdZ
 knative.dev/hack v0.0.0-20210602212444-509255f29a24/go.mod h1:PHt8x8yX5Z9pPquBEfIj0X66f8iWkWfR0S/sarACJrI=
 knative.dev/hack/schema v0.0.0-20210428122153-93ad9129c268/go.mod h1:ffjwmdcrH5vN3mPhO8RrF2KfNnbHeCE2C60A+2cv3U0=
 knative.dev/hack/schema v0.0.0-20210602212444-509255f29a24/go.mod h1:ffjwmdcrH5vN3mPhO8RrF2KfNnbHeCE2C60A+2cv3U0=
-knative.dev/kn-plugin-func v0.16.1-0.20210727184450-1a1288a6d43e h1:EFyTQZP32+IYfpleDbqrzxfys4zyKvSDGlgz38gbjL8=
-knative.dev/kn-plugin-func v0.16.1-0.20210727184450-1a1288a6d43e/go.mod h1:+Q/3fhG11gVeO+DT3bvfTN5qplinLAmT/cqI/D+eru0=
+knative.dev/kn-plugin-func v0.16.1-0.20210802153742-92b309f7916a h1:UGPJy+0pyTJzttcysGJBMeY5AxrpN1rOD8ys2W+rBLw=
+knative.dev/kn-plugin-func v0.16.1-0.20210802153742-92b309f7916a/go.mod h1:+Q/3fhG11gVeO+DT3bvfTN5qplinLAmT/cqI/D+eru0=
 knative.dev/kn-plugin-source-kafka v0.23.0 h1:RB2E5lM1yGJimp4Trrh4GFiNa37MjlZT14iQHE48W0E=
 knative.dev/kn-plugin-source-kafka v0.23.0/go.mod h1:6fBWxg2a7MZc+S4ywWYr6MBzkEfVcvwP7QsdV/uEHwA=
 knative.dev/networking v0.0.0-20210215030235-088986a1c2a3/go.mod h1:pmAMQjMqQUxpK0UyjE71KljMs6rwDMVIAlvrZsU3I6Y=
