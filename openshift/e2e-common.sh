@@ -33,7 +33,13 @@ readonly EVENTING_BRANCH="release-next"
 
 # Determine if we're running locally or in CI.
 if [ -n "$OPENSHIFT_BUILD_NAMESPACE" ]; then
-  readonly TEST_IMAGE_TEMPLATE="${IMAGE_FORMAT//\$\{component\}/knative-client-test-{{.Name}}}"
+  readonly TEST_IMAGE_TEMPLATE=$(cat <<-END
+{{- with .Name }}
+{{- if eq . "helloworld"}}$KNATIVE_CLIENT_TEST_HELLOWORLD{{end -}}
+{{- if eq . "grpc-ping"}}$KNATIVE_CLIENT_TEST_GRPC_PING{{end -}}
+{{end -}}
+END
+)
 elif [ -n "$DOCKER_REPO_OVERRIDE" ]; then
   readonly TEST_IMAGE_TEMPLATE="${DOCKER_REPO_OVERRIDE}/{{.Name}}"
 elif [ -n "$BRANCH" ]; then
@@ -104,7 +110,7 @@ run_client_e2e_tests(){
   go test \
     ./test/e2e \
     -v -timeout=$E2E_TIMEOUT -mod=vendor \
-    --imagetemplate $TEST_IMAGE_TEMPLATE \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
     ${run_append} || failed=$?
 
   return $failed
