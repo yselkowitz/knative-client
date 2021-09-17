@@ -9,7 +9,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf
+	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
 	gotest.tools/v3 v3.0.3
 	k8s.io/api v0.20.7
 	k8s.io/apiextensions-apiserver v0.20.7
@@ -19,6 +19,7 @@ require (
 	k8s.io/code-generator v0.20.7
 	knative.dev/eventing v0.24.0
 	knative.dev/hack v0.0.0-20210622141627-e28525d8d260
+	knative.dev/kn-plugin-func v0.18.0
 	knative.dev/kn-plugin-source-kafka v0.24.0
 	knative.dev/networking v0.0.0-20210622182128-53f45d6d2cfa
 	knative.dev/pkg v0.0.0-20210622173328-dd0db4b05c80
@@ -27,3 +28,5 @@ require (
 )
 
 replace github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
+
+replace knative.dev/kn-plugin-func => github.com/openshift-knative/kn-plugin-func v0.18.1-0.20210916185033-7bfb8584f147
