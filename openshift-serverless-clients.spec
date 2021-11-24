@@ -2,8 +2,8 @@
 %global debug_package %{nil}
 %global package_name openshift-serverless-clients
 %global product_name OpenShift Serverless
-%global golang_version 1.16
-%global kn_version 0.25.1
+%global golang_version 1.17
+%global kn_version 0.26.0
 %global kn_release 1
 %global kn_cli_version v%{kn_version}
 %global source_dir knative-client
@@ -68,6 +68,9 @@ Obsoletes:      %{package_name} < %{kn_version}
 %{_datadir}/%{name}-redistributable/windows/kn-windows-amd64.exe
 
 %changelog
+* Thu Nov 18 2021 David Simansky <dsimansk@redhat.com> v0.26.0-1
+- Bump kn release v0.26.0
+
 * Tue Nov 2 2021 David Simansky <dsimansk@redhat.com> v0.25.1-1
 - Bump kn release v0.25.1
 
