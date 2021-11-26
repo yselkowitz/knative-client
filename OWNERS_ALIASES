@@ -2,12 +2,10 @@ aliases:
   knative-client-approvers:
   - alanfx
   - dsimansk
-  - markusthoemmes
   - matzew
   - rhuss
   knative-client-reviewers:
   - alanfx
   - dsimansk
-  - markusthoemmes
   - matzew
   - rhuss
