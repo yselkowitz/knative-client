@@ -153,19 +153,10 @@ func cwd() (cwd string) {
 	return cwd
 }
 
-// The anme of the repositories directory within config dir (usually ~/.config)
-const repositoriesDirName = "repositories"
-
-// repositoriesPath is the effective path to the optional repositories directory
-// used for extensible language packs.
-func repositoriesPath() string {
-	return filepath.Join(fn.ConfigPath(), repositoriesDirName)
-}
-
 // bindFunc which conforms to the cobra PreRunE method signature
 type bindFunc func(*cobra.Command, []string) error
 
-// bindEnv returns a bindFunc that binds env vars to the namd flags.
+// bindEnv returns a bindFunc that binds env vars to the named flags.
 func bindEnv(flags ...string) bindFunc {
 	return func(cmd *cobra.Command, args []string) (err error) {
 		for _, flag := range flags {
@@ -299,7 +290,7 @@ func envFromCmd(cmd *cobra.Command) (*util.OrderedMap, []string, error) {
 	return util.NewOrderedMap(), []string{}, nil
 }
 
-func mergeEnvs(envs fn.Envs, envToUpdate *util.OrderedMap, envToRemove []string) (fn.Envs, error) {
+func mergeEnvs(envs []fn.Env, envToUpdate *util.OrderedMap, envToRemove []string) ([]fn.Env, error) {
 	updated := sets.NewString()
 
 	for i := range envs {
@@ -332,8 +323,18 @@ func mergeEnvs(envs fn.Envs, envToUpdate *util.OrderedMap, envToRemove []string)
 
 	errMsg := fn.ValidateEnvs(envs)
 	if len(errMsg) > 0 {
-		return fn.Envs{}, fmt.Errorf(strings.Join(errMsg, "\n"))
+		return []fn.Env{}, fmt.Errorf(strings.Join(errMsg, "\n"))
 	}
 
 	return envs, nil
+}
+
+// setPathFlag ensures common text/wording when the --path flag is used
+func setPathFlag(cmd *cobra.Command) {
+	cmd.Flags().StringP("path", "p", cwd(), "Path to the project directory (Env: $FUNC_PATH)")
+}
+
+// setNamespaceFlag ensures common text/wording when the --namespace flag is used
+func setNamespaceFlag(cmd *cobra.Command) {
+	cmd.Flags().StringP("namespace", "n", "", "The namespace on the cluster. By default, the namespace in func.yaml is used or the currently active namespace if not set in the configuration. (Env: $FUNC_NAMESPACE)")
 }

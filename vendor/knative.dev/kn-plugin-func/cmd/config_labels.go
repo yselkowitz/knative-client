@@ -79,11 +79,11 @@ directory or from the directory specified with --path.
 		},
 	}
 
-	configLabelsCmd.Flags().StringP("path", "p", cwd(), "Path to the project directory (Env: $FUNC_PATH)")
+	setPathFlag(configLabelsCmd)
+	setPathFlag(configLabelsAddCmd)
+	setPathFlag(configLabelsRemoveCmd)
 	configLabelsCmd.AddCommand(configLabelsAddCmd)
-	configLabelsAddCmd.Flags().StringP("path", "p", cwd(), "Path to the project directory (Env: $FUNC_PATH)")
 	configLabelsCmd.AddCommand(configLabelsRemoveCmd)
-	configLabelsRemoveCmd.Flags().StringP("path", "p", cwd(), "Path to the project directory (Env: $FUNC_PATH)")
 
 	return configLabelsCmd
 }
@@ -269,7 +269,7 @@ func runRemoveLabelsPrompt(f fn.Function, saver functionSaver) (err error) {
 		return
 	}
 
-	var newLabels fn.Labels
+	var newLabels []fn.Label
 	removed := false
 	for i, e := range f.Labels {
 		if e.String() == selectedLabel {

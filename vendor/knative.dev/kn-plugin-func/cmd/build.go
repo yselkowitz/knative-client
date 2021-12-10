@@ -11,6 +11,7 @@ import (
 
 	fn "knative.dev/kn-plugin-func"
 	"knative.dev/kn-plugin-func/buildpacks"
+	"knative.dev/kn-plugin-func/docker"
 	"knative.dev/kn-plugin-func/progress"
 )
 
@@ -24,11 +25,31 @@ func newBuildClient(cfg buildConfig) (*fn.Client, error) {
 	builder := buildpacks.NewBuilder()
 	listener := progress.New()
 
+	pusherOption := fn.WithPusher(nil)
+	if cfg.Push {
+		credentialsProvider := docker.NewCredentialsProvider(
+			newCredentialsCallback(),
+			docker.CheckAuth,
+			newChooseHelperCallback(),
+		)
+		pusher, err := docker.NewPusher(
+			docker.WithCredentialsProvider(credentialsProvider),
+			docker.WithProgressListener(listener),
+		)
+
+		if err != nil {
+			return nil, err
+		}
+		pusher.Verbose = cfg.Verbose
+		pusherOption = fn.WithPusher(pusher)
+	}
 	builder.Verbose = cfg.Verbose
 	listener.Verbose = cfg.Verbose
 
 	return fn.New(
 		fn.WithBuilder(builder),
+		// fn.WithPusher(pusher),
+		pusherOption,
 		fn.WithProgressListener(listener),
 		fn.WithRegistry(cfg.Registry), // for image name when --image not provided
 		fn.WithVerbose(cfg.Verbose)), nil
@@ -64,14 +85,15 @@ kn func build
 kn func build --builder cnbs/sample-builder:bionic
 `,
 		SuggestFor: []string{"biuld", "buidl", "built"},
-		PreRunE:    bindEnv("image", "path", "builder", "registry", "confirm"),
+		PreRunE:    bindEnv("image", "path", "builder", "registry", "confirm", "push"),
 	}
 
 	cmd.Flags().StringP("builder", "b", "", "Buildpack builder, either an as a an image name or a mapping name.\nSpecified value is stored in func.yaml for subsequent builds.")
 	cmd.Flags().BoolP("confirm", "c", false, "Prompt to confirm all configuration options (Env: $FUNC_CONFIRM)")
 	cmd.Flags().StringP("image", "i", "", "Full image name in the form [registry]/[namespace]/[name]:[tag] (optional). This option takes precedence over --registry (Env: $FUNC_IMAGE)")
-	cmd.Flags().StringP("path", "p", cwd(), "Path to the project directory (Env: $FUNC_PATH)")
 	cmd.Flags().StringP("registry", "r", "", "Registry + namespace part of the image to build, ex 'quay.io/myuser'.  The full image name is automatically determined based on the local directory name. If not provided the registry will be taken from func.yaml (Env: $FUNC_REGISTRY)")
+	cmd.Flags().BoolP("push", "u", false, "Attempt to push the function image after being successfully built")
+	setPathFlag(cmd)
 
 	if err := cmd.RegisterFlagCompletionFunc("builder", CompleteBuilderList); err != nil {
 		fmt.Println("internal: error while calling RegisterFlagCompletionFunc: ", err)
@@ -84,7 +106,7 @@ kn func build --builder cnbs/sample-builder:bionic
 	return cmd
 }
 
-func ValidNamespaceAndRegistry() survey.Validator {
+func ValidNamespaceAndRegistry(path string) survey.Validator {
 	return func(val interface{}) error {
 
 		// if the value passed in is the zero value of the appropriate type
@@ -92,10 +114,10 @@ func ValidNamespaceAndRegistry() survey.Validator {
 			return errors.New("Value is required")
 		}
 
-		_, err := fn.DerivedImage("", val.(string)) //image can be derived without any error
+		_, err := fn.DerivedImage(path, val.(string)) //image can be derived without any error
 
 		if err != nil {
-			return errors.New(val.(string) + " Registry and Namespace are required (ie. docker.io/tigerteam). The image name will be derived from the function name.")
+			return fmt.Errorf("Invalid registry [%s] %v", val.(string), err)
 		}
 		return nil
 	}
@@ -120,6 +142,14 @@ func runBuild(cmd *cobra.Command, _ []string, clientFn buildClientFn) (err error
 		return fmt.Errorf("the given path '%v' does not contain an initialized function. Please create one at this path before deploying", config.Path)
 	}
 
+	// If a registry name was provided as a command line flag, it should be validated
+	if config.Registry != "" {
+		err = ValidNamespaceAndRegistry(config.Path)(config.Registry)
+		if err != nil {
+			return
+		}
+	}
+
 	// If the Function does not yet have an image name and one was not provided on the command line
 	if function.Image == "" {
 		//  AND a --registry was not provided, then we need to
@@ -129,7 +159,7 @@ func runBuild(cmd *cobra.Command, _ []string, clientFn buildClientFn) (err error
 
 			err = survey.AskOne(
 				&survey.Input{Message: "Registry for Function images:"},
-				&config.Registry, survey.WithValidator(ValidNamespaceAndRegistry()))
+				&config.Registry, survey.WithValidator(ValidNamespaceAndRegistry(config.Path)))
 			if err != nil {
 				if err == terminal.InterruptErr {
 					return nil
@@ -145,7 +175,7 @@ func runBuild(cmd *cobra.Command, _ []string, clientFn buildClientFn) (err error
 	}
 
 	// All set, let's write changes in the config to the disk
-	err = function.WriteConfig()
+	err = function.Write()
 	if err != nil {
 		return
 	}
@@ -162,7 +192,11 @@ func runBuild(cmd *cobra.Command, _ []string, clientFn buildClientFn) (err error
 		return err
 	}
 
-	return client.Build(cmd.Context(), config.Path)
+	err = client.Build(cmd.Context(), config.Path)
+	if err == nil && config.Push {
+		err = client.Push(cmd.Context(), &function)
+	}
+	return
 }
 
 type buildConfig struct {
@@ -198,6 +232,7 @@ func newBuildConfig() buildConfig {
 		Verbose:  viper.GetBool("verbose"), // defined on root
 		Confirm:  viper.GetBool("confirm"),
 		Builder:  viper.GetString("builder"),
+		Push:     viper.GetBool("push"),
 	}
 }
 

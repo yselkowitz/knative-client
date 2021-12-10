@@ -60,7 +60,7 @@ check: bin/golangci-lint ## Check code quality (lint)
 	cd test/_e2e && ../../bin/golangci-lint run --timeout 300s
 
 bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.40.1
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.43.0
 
 pkged.go: $(TEMPLATES)
 	@rm -rf templates/node/cloudevents/node_modules
@@ -152,7 +152,7 @@ $(BIN_WINDOWS): pkged.go
 ##@ Schemas
 ######################
 schema-generate: schema/func_yaml-schema.json ## Generate func.yaml schema
-schema/func_yaml-schema.json: config.go
+schema/func_yaml-schema.json: function.go
 	go run schema/generator/main.go
 
 schema-check: ## Check that func.yaml schema is up-to-date

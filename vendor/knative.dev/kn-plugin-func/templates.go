@@ -7,6 +7,7 @@ package function
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -96,11 +97,17 @@ func (t *Templates) Get(runtime, fullname string) (Template, error) {
 	return repo.Template(runtime, tplName)
 }
 
-// Write a template to disk for the given Function
+// Write a function's template to disk.
 // Returns a Function which may have been modified dependent on the content
 // of the template (which can define default Function fields, builders,
 // buildpacks, etc)
 func (t *Templates) Write(f Function) (Function, error) {
+	// Templates require an initially valid Function to write
+	// (has name, path, runtime etc)
+	if err := f.Validate(); err != nil {
+		return f, err
+	}
+
 	// The Function's Template
 	template, err := t.Get(f.Runtime, f.Template)
 	if err != nil {
@@ -132,7 +139,7 @@ func (t *Templates) Write(f Function) (Function, error) {
 	// so it's values are treated as defaults.
 	// TODO: this begs the question: should the Template's manifest.yaml actually
 	// be a partially-populated func.yaml?
-	if f.Builder == "" { // as a special fist case, this default comes from itself
+	if f.Builder == "" { // as a special first case, this default comes from itself
 		f.Builder = f.Builders["default"]
 		if f.Builder == "" { // still nothing?  then use the template
 			f.Builder = template.Builders["default"]
@@ -144,6 +151,9 @@ func (t *Templates) Write(f Function) (Function, error) {
 	if len(f.Buildpacks) == 0 {
 		f.Buildpacks = template.Buildpacks
 	}
+	if len(f.BuildEnvs) == 0 {
+		f.BuildEnvs = template.BuildEnvs
+	}
 	if f.HealthEndpoints.Liveness == "" {
 		f.HealthEndpoints.Liveness = template.HealthEndpoints.Liveness
 	}
@@ -152,7 +162,11 @@ func (t *Templates) Write(f Function) (Function, error) {
 	}
 
 	// Copy the template files from the repo filesystem to the new Function's root
-	return f, copy(templatePath, f.Root, repo.FS)
+	// removing the manifest (if it exists; errors ignored)
+	err = copy(templatePath, f.Root, repo.FS)              // copy everything
+	_ = os.Remove(filepath.Join(f.Root, templateManifest)) // except the manifest
+
+	return f, err
 }
 
 // Embedding Directives

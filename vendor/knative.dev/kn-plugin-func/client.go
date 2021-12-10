@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"time"
 
 	"github.com/mitchellh/go-homedir"
@@ -17,54 +18,26 @@ const (
 	// DefaultRegistry through which containers of Functions will be shuttled.
 	DefaultRegistry = "docker.io"
 
-	// DefaultRuntime is the language runtime for a new Function, including
-	// the template written and builder invoked on deploy.
-	DefaultRuntime = "node"
-
 	// DefaultTemplate is the default Function signature / environmental context
 	// of the resultant function.  All runtimes are expected to have at least
 	// one implementation of each supported function signature.  Currently that
 	// includes an HTTP Handler ("http") and Cloud Events handler ("events")
 	DefaultTemplate = "http"
 
-	// The name of the config directory within ~/.config (or configured location)
-	configDirName = "func"
+	// DefaultVersion is the initial value for string members whose implicit type
+	// is a semver.
+	DefaultVersion = "0.0.0"
+
+	// DefaultConfigPath is used in the unlikely event that
+	// the user has no home directory (no ~), there is no
+	// XDG_CONFIG_HOME set, and no WithConfigPath was used.
+	DefaultConfigPath = ".config/func"
 )
-
-// ConfigPath is the effective path to the optional global config directory used for
-// function defaults and extensible templates.
-func ConfigPath() string {
-	path := configPath()
-	_ = os.MkdirAll(path, 0700)
-	return path
-}
-
-func configPath() string {
-	// Use XDG_CONFIG_HOME/func if defined
-	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, configDirName)
-	}
-
-	// Expand and use ~/.config/func
-	home, err := homedir.Expand("~")
-	if err == nil {
-		return filepath.Join(home, ".config", configDirName)
-	}
-
-	// default is .config in current working directory, used when there is no
-	// available home in which to find a .`.config/func` directory.
-	// A case could be made that a panic is in order in this scenario, but
-	// currently this seems like a nonfatal situation, as in the scenario
-	// "there is no home directory", the fallback of using `.config` if extant
-	// may very well be the optimal choice.
-	fmt.Fprintf(os.Stderr, "Error locating ~/.config: %v", err)
-	return filepath.Join(".config", configDirName)
-}
 
 // Client for managing Function instances.
 type Client struct {
-	repositories     *Repositories    // Repositories management
-	templates        *Templates       // Templates management
+	repositoriesPath string           // path to repositories
+	repositoriesURI  string           // repo URI (overrides repositories path)
 	verbose          bool             // print verbose logs
 	builder          Builder          // Builds a runnable image source
 	pusher           Pusher           // Pushes Funcation image to a remote
@@ -77,6 +50,8 @@ type Client struct {
 	registry         string           // default registry for OCI image tags
 	progressListener ProgressListener // progress listener
 	emitter          Emitter          // Emits CloudEvents to functions
+	repositories     *Repositories    // Repositories management
+	templates        *Templates       // Templates management
 }
 
 // ErrNotBuilt indicates the Function has not yet been built.
@@ -196,8 +171,6 @@ type Emitter interface {
 func New(options ...Option) *Client {
 	// Instantiate client with static defaults.
 	c := &Client{
-		repositories:     &Repositories{},
-		templates:        &Templates{},
 		builder:          &noopBuilder{output: os.Stdout},
 		pusher:           &noopPusher{output: os.Stdout},
 		deployer:         &noopDeployer{output: os.Stdout},
@@ -207,13 +180,61 @@ func New(options ...Option) *Client {
 		dnsProvider:      &noopDNSProvider{output: os.Stdout},
 		progressListener: &NoopProgressListener{},
 		emitter:          &noopEmitter{},
+		repositoriesPath: filepath.Join(ConfigPath(), "repositories"),
 	}
-	c.repositories = newRepositories(c)
-	c.templates = newTemplates(c)
 	for _, o := range options {
 		o(c)
 	}
+	// Initialize sub-managers using now-fully-initialized client.
+	c.repositories = newRepositories(c)
+	c.templates = newTemplates(c)
+
+	// Trigger the creation of the config and repository paths
+	_ = ConfigPath()         // Config is package-global scoped
+	_ = c.RepositoriesPath() // Repositories is Client-specific
+
 	return c
+}
+
+// The default config path is evaluated in the following order, from lowest
+// to highest precedence.
+// 1.  The static default is DefaultConfigPath (./.config/func)
+// 2.  ~/.config/func if it exists (can be expanded: user has a home dir)
+// 3.  The value of $XDG_CONFIG_PATH/func if the environment variable exists.
+// The path will be created if it does not already exist.
+func ConfigPath() (path string) {
+	path = DefaultConfigPath
+
+	// ~/.config/func is the default if ~ can be expanded
+	if home, err := homedir.Expand("~"); err == nil {
+		path = filepath.Join(home, ".config", "func")
+	}
+
+	// 'XDG_CONFIG_HOME/func' takes precidence if defined
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		path = filepath.Join(xdg, "func")
+	}
+
+	mkdir(path) // make sure it exists
+	return
+}
+
+// RepositoriesPath accesses the currently effective repositories path,
+// which defaults to [ConfigPath]/repositories but can be set explicitly using
+// the WithRepositories option when creating the client..
+// The path will be created if it does not already exist.
+func (c *Client) RepositoriesPath() (path string) {
+	path = c.repositories.Path()
+	mkdir(path) // make sure it exists
+	return
+}
+
+// RepositoriesPath is a convenience method for accessing the default path to
+// repositories that will be used by new instances of a Client unless options
+// such as WithRepositories are used to override.
+// The path will be created if it does not already exist.
+func RepositoriesPath() string {
+	return New().RepositoriesPath()
 }
 
 // OPTIONS
@@ -296,21 +317,21 @@ func WithDNSProvider(provider DNSProvider) Option {
 	}
 }
 
-// WithRepositories sets the location to use for extensible template repositories.
-// Extensible template repositories are additional templates that exist on disk and are
-// not built into the binary.
+// WithRepositories sets the location to use for extensible template
+// repositories.  Extensible template repositories are additional templates
+// that exist on disk and are not built into the binary.
 func WithRepositories(path string) Option {
 	return func(c *Client) {
-		c.Repositories().SetPath(path)
+		c.repositoriesPath = path
 	}
 }
 
-// WithRepository sets a specific URL to a Git repository from which to pull templates.
-// This setting's existence precldes the use of either the inbuilt templates or any
-// repositories from the extensible repositories path.
+// WithRepository sets a specific URL to a Git repository from which to pull
+// templates.  This setting's existence precldes the use of either the inbuilt
+// templates or any repositories from the extensible repositories path.
 func WithRepository(uri string) Option {
 	return func(c *Client) {
-		c.Repositories().SetRemote(uri)
+		c.repositoriesURI = uri
 	}
 }
 
@@ -386,9 +407,8 @@ func (c *Client) New(ctx context.Context, cfg Function) (err error) {
 		c.progressListener.Stopping()
 	}()
 
-	// Create local template
-	err = c.Create(cfg)
-	if err != nil {
+	// Create Function at path indidcated by Config
+	if err = c.Create(cfg); err != nil {
 		return
 	}
 
@@ -428,61 +448,65 @@ func (c *Client) New(ctx context.Context, cfg Function) (err error) {
 	return
 }
 
-// Create a new Function project locally using the settings provided on a
-// Function object.
-func (c *Client) Create(f Function) (err error) {
-	// Create project root directory, if it doesn't already exist
-	if err = os.MkdirAll(f.Root, 0755); err != nil {
-		return
-	}
-
-	// Root must not already be a Function
-	//
-	// Instantiate a Function struct about the given root path, but
-	// immediately exit with error (prior to actual creation) if this is
-	// a Function already initialized at that path (Create should never
-	// clobber a pre-existing Function)
-	defaults, err := NewFunction(f.Root)
+// Create a new Function from the given defaults.
+// <path> will default to the absolute path of the current working directory.
+// <name> will default to the current working directory.
+// When <name> is provided but <path> is not, a directory <name> is created
+// in the current working directory and used for <path>.
+func (c *Client) Create(cfg Function) (err error) {
+	// convert Root path to absolute
+	cfg.Root, err = filepath.Abs(cfg.Root)
 	if err != nil {
 		return
 	}
-	if defaults.Initialized() {
-		err = fmt.Errorf("Function at '%v' already initialized", f.Root)
+
+	// Create project root directory, if it doesn't already exist
+	if err = os.MkdirAll(cfg.Root, 0755); err != nil {
 		return
 	}
 
-	// Root must not contain any visible files
-	//
-	// We know from above that the target directory does not contain a Function,
-	// but also immediately exit if the target directoy contains any visible files
-	// at all, or any of the known hidden files that will be written.
-	// This is to ensure that if a user inadvertently chooses an incorrect directory
-	// for their new Function, the template and config file writing steps do not
-	// cause data loss.
-	if err = assertEmptyRoot(f.Root); err != nil {
-		return
+	// Create should never clobber a pre-existing Function
+	hasFunc, err := hasInitializedFunction(cfg.Root)
+	if err != nil {
+		return err
+	}
+	if hasFunc {
+		return fmt.Errorf("Function at '%v' already initialized", cfg.Root)
 	}
 
-	// Assert runtime was provided, or default.
-	if f.Runtime == "" {
-		f.Runtime = DefaultRuntime
+	// The path for the new Function should not have any contentious files
+	// (hidden files OK, unless it's one used by Func)
+	if err := assertEmptyRoot(cfg.Root); err != nil {
+		return err
 	}
 
-	// Assert template name was provided, or default.
-	if f.Template == "" {
-		f.Template = DefaultTemplate
+	// Path is defaulted to the current working directory
+	if cfg.Root == "" {
+		if cfg.Root, err = os.Getwd(); err != nil {
+			return
+		}
 	}
 
-	// Write out the template for a Function
-	// returns a Function which may be mutated based on the content of
-	// the template (default Function, builders, buildpacks, etc).
+	// Name is defaulted to the directory of the given path.
+	if cfg.Name == "" {
+		cfg.Name = nameFromPath(cfg.Root)
+	}
+
+	// Create a new Function
+	f := NewFunctionWith(cfg)
+
+	// Write out the new Function's Template files.
+	// Templates contain values which may result in the Function being mutated
+	// (default builders, etc), so a new (potentially mutated) Function is
+	// returned from Templates.Write
 	f, err = c.Templates().Write(f)
 	if err != nil {
 		return
 	}
 
-	// Write the Function metadata (func.yaml)
-	if err = writeConfig(f); err != nil {
+	// Mark the Function as having been created
+	f.Created = time.Now()
+	if err = f.Write(); err != nil {
 		return
 	}
 
@@ -511,7 +535,7 @@ func (c *Client) Build(ctx context.Context, path string) (err error) {
 		"Don't give up on me",
 		"This is taking a while",
 		"Still building"}
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	go func() {
 		for {
@@ -543,9 +567,9 @@ func (c *Client) Build(ctx context.Context, path string) (err error) {
 		return
 	}
 
-	// Write out config, which will now contain a populated image tag
-	// if it had not already
-	if err = writeConfig(f); err != nil {
+	// Write (save) - Serialize the Function to disk
+	// Will now contain populated image tag.
+	if err = f.Write(); err != nil {
 		return
 	}
 
@@ -578,15 +602,7 @@ func (c *Client) Deploy(ctx context.Context, path string) (err error) {
 		return ErrNotBuilt
 	}
 
-	// Push the image for the named service to the configured registry
-	imageDigest, err := c.pusher.Push(ctx, f)
-	if err != nil {
-		return
-	}
-
-	// Store the produced image Digest in the config
-	f.ImageDigest = imageDigest
-	if err = writeConfig(f); err != nil {
+	if err = c.Push(ctx, &f); err != nil {
 		return
 	}
 
@@ -700,6 +716,18 @@ func (c *Client) Emit(ctx context.Context, endpoint string) error {
 	return c.emitter.Emit(ctx, endpoint)
 }
 
+// Push the image for the named service to the configured registry
+func (c *Client) Push(ctx context.Context, f *Function) (err error) {
+	imageDigest, err := c.pusher.Push(ctx, *f)
+	if err != nil {
+		return
+	}
+
+	// Record the Image Digest pushed.
+	f.ImageDigest = imageDigest
+	return f.Write()
+}
+
 // DEFAULTS
 // ---------
 
@@ -765,3 +793,14 @@ func (p *NoopProgressListener) Increment(m string) {}
 func (p *NoopProgressListener) Complete(m string)  {}
 func (p *NoopProgressListener) Stopping()          {}
 func (p *NoopProgressListener) Done()              {}
+
+// mkdir attempts to mkdir, writing any errors to stderr.
+func mkdir(path string) {
+	// Since it is expected that the code elsewhere never assume directories
+	// exist (doing so is a racing condition), it is valid to simply
+	// handle errors at this level.
+	if err := os.MkdirAll(path, 0700); err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating '%v': %v", path, err)
+		debug.PrintStack()
+	}
+}
