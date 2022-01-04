@@ -18,7 +18,7 @@ require (
 	k8s.io/code-generator v0.21.4
 	knative.dev/eventing v0.26.1
 	knative.dev/hack v0.0.0-20210806075220-815cd312d65c
-	knative.dev/kn-plugin-event v0.26.0
+	knative.dev/kn-plugin-event v0.26.1
 	knative.dev/kn-plugin-func v0.20.0
 	knative.dev/kn-plugin-source-kafka v0.26.0
 	knative.dev/networking v0.0.0-20210916065741-5e884aff221e
@@ -29,6 +29,6 @@ require (
 
 replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.21.4
-	knative.dev/kn-plugin-event => github.com/openshift-knative/kn-plugin-event v0.26.2-0.20211209202740-89c860ca5062
+	knative.dev/kn-plugin-event => github.com/openshift-knative/kn-plugin-event v0.26.2-0.20211223134650-ffdcc78926e6
 	knative.dev/kn-plugin-func => github.com/openshift-knative/kn-plugin-func v0.20.0
 )
