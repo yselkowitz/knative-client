@@ -3,9 +3,10 @@
 %global package_name openshift-serverless-clients
 %global product_name OpenShift Serverless
 %global golang_version 1.17
-%global kn_version 0.26.0
+%global kn_version 1.1.0
 %global kn_release 1
 %global kn_cli_version v%{kn_version}
+%global kn_event_image %{nil}
 %global source_dir knative-client
 %global source_tar %{source_dir}-%{kn_version}-%{kn_release}.tar.gz
 
@@ -28,7 +29,9 @@ Client kn provides developer experience to work with Knative Serving APIs.
 %setup -q -n %{source_dir}
 
 %build
-TAG=%{kn_cli_version} make build-cross
+TAG=%{kn_cli_version} \
+KN_PLUGIN_EVENT_SENDER_IMAGE=%{kn_event_image} \
+make build-cross
 
 %install
 mkdir -p %{buildroot}/%{_bindir}
@@ -68,6 +71,12 @@ Obsoletes:      %{package_name} < %{kn_version}
 %{_datadir}/%{name}-redistributable/windows/kn-windows-amd64.exe
 
 %changelog
+* Tue Mar 29 2022 David Simansky <dsimansk@redhat.com> v1.1.0-1
+- Bump kn release v1.1.0
+
+* Thu Feb 17 2022 David Simansky <dsimansk@redhat.com> v1.0.0-1
+- Bump kn release v1.0.0
+
 * Thu Nov 18 2021 David Simansky <dsimansk@redhat.com> v0.26.0-1
 - Bump kn release v0.26.0
 
