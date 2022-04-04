@@ -3,7 +3,7 @@
 %global package_name openshift-serverless-clients
 %global product_name OpenShift Serverless
 %global golang_version 1.17
-%global kn_version 1.0.0
+%global kn_version 1.0.1
 %global kn_release 1
 %global kn_cli_version v%{kn_version}
 %global kn_event_image %{nil}
@@ -71,6 +71,9 @@ Obsoletes:      %{package_name} < %{kn_version}
 %{_datadir}/%{name}-redistributable/windows/kn-windows-amd64.exe
 
 %changelog
+* Thu Apr 4 2022 David Simansky <dsimansk@redhat.com> v1.0.1-1
+- Fix SpringBoot CVE 2022-22963 in kn-plugin-func
+
 * Thu Feb 17 2022 David Simansky <dsimansk@redhat.com> v1.0.0-1
 - Bump kn release v1.0.0
 
