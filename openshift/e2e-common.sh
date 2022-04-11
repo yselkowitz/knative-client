@@ -86,7 +86,22 @@ build_knative_client() {
 
 run_unit_tests() {
   failed=0
-  go test -v ./cmd/... ./pkg/... || failed=1
+
+  KNATIVE_CLIENT_UNIT_TESTS_ARTIFACTS_JUNIT="${KNATIVE_CLIENT_UNIT_TESTS_ARTIFACTS_JUNIT:-${ARTIFACTS}/junit-knative-client-unit-tests.xml}"
+  KNATIVE_CLIENT_UNIT_TESTS_ARTIFACTS_JSONL="${KNATIVE_CLIENT_UNIT_TESTS_ARTIFACTS_JSONL:-${ARTIFACTS}/logs-knative-client-unit-tests.jsonl}"
+
+  unset GOFLAGS GO111MODULE
+
+  GOPATH="$(mktemp -t -d -u gopath.XXXXXXXX)" \
+    go run gotest.tools/gotestsum@v1.8.0 \
+      --junitfile "${KNATIVE_CLIENT_UNIT_TESTS_ARTIFACTS_JUNIT}" \
+      --junitfile-testsuite-name relative \
+      --junitfile-testcase-classname relative \
+      --jsonfile "${KNATIVE_CLIENT_UNIT_TESTS_ARTIFACTS_JSONL}" \
+      --format testname -- \
+      -mod=vendor -race \
+      ./cmd/... ./pkg/... \
+      || failed=$?
   return $failed
 }
 
@@ -98,11 +113,8 @@ run_client_e2e_tests(){
   local failed=0
   # Add local dir to have access to built kn
   export PATH=$PATH:${REPO_ROOT_DIR}
-  export GO111MODULE=on
-  # In CI environment GOFLAGS is set to '-mod=vendor', unsetting it and providing explicit flag below
-  # while invoking go e2e tests. Unsetting to keep using -mod=vendor irrespective of whether GOFLAGS is set or not.
-  # Ideally this should be overridden but see https://github.com/golang/go/issues/35827
-  unset GOFLAGS
+
+  unset GOFLAGS GO111MODULE
 
   # Add anyuid scc to all authenticated users so e2e tests for --user flag can user any user id
   oc adm policy add-scc-to-group anyuid system:authenticated
@@ -116,12 +128,23 @@ run_client_e2e_tests(){
   else
     run_append="${run_append} -tags e2e"
   fi
+  KNATIVE_CLIENT_E2E_TESTS_ARTIFACTS_JUNIT="${KNATIVE_CLIENT_E2E_TESTS_ARTIFACTS_JUNIT:-${ARTIFACTS}/junit-knative-client-e2e-tests.xml}"
+  KNATIVE_CLIENT_E2E_TESTS_ARTIFACTS_JSONL="${KNATIVE_CLIENT_E2E_TESTS_ARTIFACTS_JSONL:-${ARTIFACTS}/logs-knative-client-e2e-tests.jsonl}"
 
-  go test \
-    ./test/e2e \
-    -v -timeout=$E2E_TIMEOUT -mod=vendor \
-    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
-    ${run_append} || failed=$?
+  GOPATH="$(mktemp -t -d -u gopath.XXXXXXXX)" \
+    go run gotest.tools/gotestsum@v1.8.0 \
+      --junitfile "${KNATIVE_CLIENT_E2E_TESTS_ARTIFACTS_JUNIT}" \
+      --junitfile-testsuite-name relative \
+      --junitfile-testcase-classname relative \
+      --jsonfile "${KNATIVE_CLIENT_E2E_TESTS_ARTIFACTS_JSONL}" \
+      --format testname -- \
+      -mod=vendor \
+      -count=1 -race \
+      -timeout=$E2E_TIMEOUT \
+      ${run_append} \
+      ./test/e2e \
+      --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+      || failed=$?
 
   return $failed
 }
@@ -148,8 +171,8 @@ run_kn_event_e2e_tests() {
   #        `UID == 0 (root)`, which is unexpected, and not inline with `''` as
   #        home directory..
   TEST_IMAGES_WATHOLA_FORWARDER="${TEST_IMAGES_WATHOLA_FORWARDER:-registry.ci.openshift.org/openshift/knative-v${knEventRelease}.0:knative-eventing-test-wathola-forwarder}"
-  KN_PLUGIN_EVENT_TEST_ARTIFACTS_JUNIT="${KN_PLUGIN_EVENT_TEST_ARTIFACTS_JUNIT:-${ARTIFACTS}/kn-event-tests.xml}"
-  KN_PLUGIN_EVENT_TEST_ARTIFACTS_JSONL="${KN_PLUGIN_EVENT_TEST_ARTIFACTS_JSONL:-${ARTIFACTS}/kn-event-log.jsonl}"
+  KN_PLUGIN_EVENT_TEST_ARTIFACTS_JUNIT="${KN_PLUGIN_EVENT_TEST_ARTIFACTS_JUNIT:-${ARTIFACTS}/junit-kn-event-tests.xml}"
+  KN_PLUGIN_EVENT_TEST_ARTIFACTS_JSONL="${KN_PLUGIN_EVENT_TEST_ARTIFACTS_JSONL:-${ARTIFACTS}/logs-kn-event-tests.jsonl}"
 
   echo '>>> The kn-plugin-event environment variables:'
   for e in KN_PLUGIN_EVENT_WATHOLA_HOMEDIR \
@@ -164,14 +187,18 @@ run_kn_event_e2e_tests() {
       echo " * ${e}: ${!e}"
   done
 
+  unset GOFLAGS GO111MODULE
+
   GOPATH="$(mktemp -t -d -u gopath.XXXXXXXX)" \
-  go run gotest.tools/gotestsum@latest \
+  go run gotest.tools/gotestsum@v1.8.0 \
     --junitfile "${KN_PLUGIN_EVENT_TEST_ARTIFACTS_JUNIT}" \
     --junitfile-testsuite-name relative \
     --junitfile-testcase-classname relative \
     --jsonfile "${KN_PLUGIN_EVENT_TEST_ARTIFACTS_JSONL}" \
     --format testname \
-    -- -timeout=5m -tags=e2e -race -count=1 \
+    -- -timeout=5m -tags=e2e \
+    -race -count=1 \
+    -mod=vendor \
     ./openshift/test/e2e/knevent/...
 }
 
