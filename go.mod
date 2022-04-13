@@ -41,6 +41,6 @@ replace (
 	k8s.io/code-generator => k8s.io/code-generator v0.21.4
 
 	// Inlined plugins
-	knative.dev/kn-plugin-event => github.com/openshift-knative/kn-plugin-event v0.27.1-0.20220331134246-2c22e325c977
+	knative.dev/kn-plugin-event => github.com/openshift-knative/kn-plugin-event v0.27.1-0.20220412125940-01b7cf265a69
 	knative.dev/kn-plugin-func => github.com/openshift-knative/kn-plugin-func v1.1.3-0.20220413141425-a3b388f3a2d8
 )
