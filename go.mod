@@ -41,6 +41,6 @@ replace (
 	// Points at: https://github.com/openshift-knative/kn-plugin-event/commit/1868b0441a3a2768724ffe5508ce0dcd6ded97c0
 	knative.dev/kn-plugin-event => github.com/openshift-knative/kn-plugin-event v0.29.1-0.20220412122141-1868b0441a3a
 
-	// Points at: https://github.com/openshift-knative/kn-plugin-func/commit/a3f704bc3c5046683a31dc5644f753de936c4018
-	knative.dev/kn-plugin-func => github.com/openshift-knative/kn-plugin-func v1.1.3-0.20220601222936-a3f704bc3c50
+	// Points at: https://github.com/openshift-knative/kn-plugin-func/commit/df6b133692f10820fdae1d0df5211ecad09ac536
+	knative.dev/kn-plugin-func => github.com/openshift-knative/kn-plugin-func v1.1.3-0.20220608163318-df6b133692f1
 )
