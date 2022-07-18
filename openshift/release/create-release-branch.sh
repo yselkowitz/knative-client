@@ -43,6 +43,15 @@ git checkout openshift/main $custom_files
 git add $custom_files
 git commit -m "Add openshift specific files."
 
+# Apply patches .
+PATCH_DIR="openshift/patches"
+# Use release-specific patch dir if exists
+if [ -d "openshift/patches-${release}" ]; then
+    PATCH_DIR="openshift/patches-${release}"
+fi
+git apply $PATCH_DIR/*
+git commit -am ":fire: Apply carried patches."
+
 # Fetch and generate required resources to enable faas as a plugin.
 # As a result two git commits are added. 
 update_faas_plugin
